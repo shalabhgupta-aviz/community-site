@@ -10,9 +10,29 @@ export async function loginUser(username, password) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
   });
+
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Login failed');
-  return data;
+
+  const token = data.token;
+  setToken(token); // ✅ Only token is stored in cookie
+  const user = await getUserProfile(token); // always fetched fresh
+
+  return { token, user };
+}
+
+export function setToken(token) {
+  Cookies.set('token', token, { expires: 7, secure: true, sameSite: 'Strict' });
+}
+
+export function getToken() {
+  
+  console.log('Cookies', Cookies.get('token'));
+  return Cookies.get('token');
+}
+
+export function removeToken() {
+  Cookies.remove('token');
 }
 
 export async function register(username, email, password) {
@@ -40,7 +60,8 @@ export function logout() {
 }
 
 export async function getUserProfile(token) {
-  const res = await fetch(`${API_BASE_URL}/users/me`, {
+  console.log('This is the getUserProfile function');
+  const res = await fetch(`${API_BASE_URL}/users/me?context=edit`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Failed to fetch user profile');
@@ -57,21 +78,4 @@ export async function updateUserProfile(userId, data, token) {
     body: JSON.stringify(data),
   });
   return res.json();
-}
-
-// Save token
-export function setToken(token) {
-  Cookies.set('token', token, {
-    expires: 7,
-    secure: true,
-    sameSite: 'Strict',
-  });
-}
-
-export function getToken() {
-  return Cookies.get('token');
-}
-
-export function removeToken() {
-  Cookies.remove('token');
 }

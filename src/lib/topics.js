@@ -1,5 +1,5 @@
 // ✅ src/lib/api/topics.js
-import { API_BASE_URL } from './config';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function getTopics() {
   const res = await fetch(`${API_BASE_URL}/forum/`);

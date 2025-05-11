@@ -26,12 +26,18 @@ export default function LoginPage() {
       if (isRegister) {
         await register(username, email, password);
         const data = await loginUser(email, password);
-        dispatch(loginSuccess({ user: data.user, token: data.token }));
-        setToken(data.token);
+        if (data.token) {
+          dispatch(loginSuccess({ user: data.user, token: data.token }));
+          setToken(data.token);
+        }
       } else {
         const data = await loginUser(email, password);
-        dispatch(loginSuccess({ user: data.user, token: data.token }));
-        setToken(data.token);
+
+        if (data.token) {
+          console.log('data-login', { user: data.user, token: data.token });
+          dispatch(loginSuccess({ user: data.user, token: data.token }));
+          setToken(data.token);
+        }
       }
       router.push('/profile');
     } catch (err) {

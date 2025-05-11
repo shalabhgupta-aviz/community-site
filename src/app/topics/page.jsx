@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getTopics } from '@/lib/api';
+import { getTopics } from '@/lib/topics';
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
 
 export default function TopicsPage() {
@@ -10,7 +10,10 @@ export default function TopicsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  
+
   useEffect(() => {
+
     const fetchTopics = async () => {
       try {
         const topicsData = await getTopics();

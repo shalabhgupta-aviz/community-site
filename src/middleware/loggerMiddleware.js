@@ -1,10 +1,8 @@
-
-// Middleware to log actions and state changes
 const loggerMiddleware = store => next => action => {
-    console.log('[Dispatching]', action);
-    let result = next(action);
-    console.log('[Next State]', store.getState());
-    return result;
-  };
-  
-  export default loggerMiddleware;
+  if (action.type?.includes('auth/')) {
+    console.log('[AUTH ACTION]', action);
+  }
+  let result = next(action);
+  return result;
+};
+export default loggerMiddleware;

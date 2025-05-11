@@ -2,6 +2,8 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import Layout from '@/layouts/Layout';
 import ClientProvider from '@/components/ClientProvider'; // 👈 New
+import { SessionProvider } from 'next-auth/react';
+
 
 const geistSans = Geist({
   subsets: ['latin'],

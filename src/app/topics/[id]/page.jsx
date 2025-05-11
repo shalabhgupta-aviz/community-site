@@ -3,7 +3,9 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getTopicDetails, getQuestionsOfTopic, getLatestReply } from '@/lib/api';
+import { getTopicDetails } from '@/lib/topics';
+import { getQuestionsOfTopic } from '@/lib/questions';
+import { getLatestRepliesInTopic } from '@/lib/replies'
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
 
 export default function TopicPage() {
@@ -19,7 +21,7 @@ export default function TopicPage() {
             try {
                 const topicData = await getTopicDetails(id);
                 const questionData = await getQuestionsOfTopic(id);
-                const latestReplyData = await getLatestReply(id);
+                const latestReplyData = await getLatestRepliesInTopic(id);
                 console.log('Latest reply:', latestReplyData);
                 setTopic(topicData);
                 setQuestions(questionData);

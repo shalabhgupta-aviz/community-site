@@ -1,30 +1,22 @@
 "use client";
 
 import Link from 'next/link';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { logout as logoutAction } from '@/store/slices/authSlice';
 import { logout as logoutHelper } from '@/lib/auth';
-import { useGetCurrentUserQuery } from '@/store/api/wpApi';
-import { signOut, useSession } from 'next-auth/react';
 
 export default function Header() {
   const dispatch = useDispatch();
-  const { data: wpUser } = useGetCurrentUserQuery();
-  const { data: session } = useSession(); // NextAuth session
+  const user = useSelector((state) => state.auth.user);
+  const token = useSelector((state) => state.auth.token);
 
   const handleLogout = () => {
-    // If using Google/LinkedIn
-    if (session) {
-      signOut({ callbackUrl: '/login' });
-    } else {
-      // JWT-based logout
-      logoutHelper();
-      dispatch(logoutAction());
-    }
+    logoutHelper();
+    dispatch(logoutAction());
   };
 
-  const isLoggedIn = !!session || !!wpUser;
-  const userName = session?.user?.name || wpUser?.name;
+  const isLoggedIn = !!token && !!user;
+  const userName = user?.name || user?.username || 'Profile';
 
   return (
     <header className="bg-white shadow-sm">
@@ -48,7 +40,7 @@ export default function Header() {
             {isLoggedIn ? (
               <>
                 <Link href="/profile" className="px-3 py-2 rounded-md hover:bg-gray-100">
-                  {userName || 'Profile'}
+                  {userName.charAt(0).toUpperCase() + userName.slice(1)}
                 </Link>
                 <button onClick={handleLogout} className="px-3 py-2 rounded-md hover:bg-gray-100">
                   Logout

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getQuestions } from '@/lib/api';
+import { getQuestions } from '@/lib/auth';
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
 import { useSearchParams } from 'next/navigation';
 

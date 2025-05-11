@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getQuestionDetails, getRepliesforQuestions, createReply } from '@/lib/api';
+import { getQuestionDetails } from '@/lib/questions';
+import { getRepliesForQuestion, createReply } from '@/lib/replies';
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
 import { useSearchParams } from 'next/navigation';
 import RichTextEditor from '@/plugins/richTextEditor';
@@ -22,7 +23,7 @@ export default function QuestionPage({ params }) {
     const fetchQuestion = async () => {
       try {
         const questionData = await getQuestionDetails(id);
-        const repliesData = await getRepliesforQuestions(id);
+        const repliesData = await getRepliesForQuestion(id);
         setQuestion(questionData);
         setReplies(repliesData);
       } catch (err) {

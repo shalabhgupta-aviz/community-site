@@ -1,0 +1,134 @@
+## CODE FLOW: Login to Profile Page in Aviz Community App (JWT Based Login)
+
+### 1. **User visits `/login` page**
+
+**File:** `src/app/login/page.jsx`
+
+* Form captures `email`, `username`, `password`
+* On submit:
+
+  * Dispatches `loginStart()` from Redux
+  * Calls `loginUser(email, password)` from `lib/auth.js`
+
+### 2. **Authentication Logic (API Call)**
+
+**File:** `src/lib/auth.js`
+
+* Function: `loginUser(username, password)`
+
+  * Makes POST request to:
+
+    ```
+    ${NEXT_PUBLIC_JWT_AUTH_URL}/jwt-auth/v1/token
+    ```
+  * Body: `{ username, password }`
+  * If successful, returns `{ token, user }`
+* Saves token via `setToken(token)` using `js-cookie`
+* Dispatches `loginSuccess({ user, token })`
+* Redirects user to `/profile`
+
+---
+
+### 3. **Token Persistence**
+
+**File:** `src/lib/auth.js`
+
+* Token is stored in **cookies** using `js-cookie`
+* On page refresh, the Redux state is empty → we rehydrate via token in cookie
+
+**File:** `src/components/ClientProvider.jsx`
+
+* Wraps everything in `<SessionProvider>` and `<Provider store={store}>`
+
+---
+
+### 4. **Protected Route Handling**
+
+**File:** `src/components/ProtectedRoute.jsx`
+
+* Reads token from Redux
+* If no token, redirects to `/login`
+* However, since token is stored in cookie, Redux doesn't get it automatically after reload → leads to bug
+
+**Fix:**
+
+* Sync Redux state with cookie-stored token on load in `ClientProvider` or `Layout`
+
+---
+
+### 5. **Profile Page Access**
+
+**File:** `src/app/profile/page.jsx`
+
+* Wrapped in `<ProtectedRoute>`
+* Fetches user via:
+
+  ```
+  useGetCurrentUserQuery()
+  ```
+
+  → which is a hook from RTK Query
+
+**File:** `src/store/api/wpApi.js`
+
+* Endpoint: `/users/me?context=edit`
+* Adds JWT token in Authorization header from cookies
+* If token missing, shows:
+
+  ```
+  { code: 'rest_not_logged_in', message: 'You are not currently logged in.' }
+  ```
+
+---
+
+### 6. **RTK Query Header Injection**
+
+**File:** `src/store/api/wpApi.js`
+
+* `prepareHeaders`:
+
+  ```js
+  const token = Cookies.get('token');
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  ```
+
+If token is not available in cookies, server call fails.
+
+---
+
+### 7. **Header Navigation State**
+
+**File:** `src/components/Headers.jsx`
+
+* Fetches session (from NextAuth) and WP user (from `/users/me`) together
+* Shows correct nav links based on:
+
+  ```js
+  const isLoggedIn = !!session || !!wpUser;
+  ```
+* Delay in showing proper header because of async `useGetCurrentUserQuery()` → causes flicker
+
+---
+
+### 🔧 Recommended Fix Summary:
+
+1. Sync Redux state from cookie in a useEffect (probably in `ClientProvider.jsx`)
+2. Fetch user profile early and cache to reduce delay
+3. Prevent `/login` access when already logged in
+4. Reuse token stored in cookie for all SSR/CSR scenarios
+
+---
+
+### 📁 Key Files Involved
+
+* `src/app/login/page.jsx`
+* `src/lib/auth.js`
+* `src/store/slices/authSlice.js`
+* `src/store/api/wpApi.js`
+* `src/app/profile/page.jsx`
+* `src/components/ProtectedRoute.jsx`
+* `src/components/Headers.jsx`
+* `src/components/ClientProvider.jsx`
+* `src/app/layout.js`
+
+Let me know if you want this bug fixed fully now or continue with social login flow setup next.

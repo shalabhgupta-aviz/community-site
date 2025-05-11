@@ -4,15 +4,30 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { getUser } from '@/lib/auth';
 import Header from '@/components/Headers';
+import { useDispatch, useSelector } from 'react-redux';
+import { useSession } from 'next-auth/react';
+import { useGetCurrentUserQuery } from '@/store/api/wpApi';
 
 export default function Layout({ children }) {
   const [user, setUser] = useState(null);
+  const dispatch = useDispatch();
+  const { data: session } = useSession();
+  const { data: wpUser } = useGetCurrentUserQuery();
+  const token = useSelector(state => state.auth.token);
 
   const handleLogout = () => {
     // Clear user data and redirect to login
     localStorage.removeItem('user');
     setUser(null);
   };
+
+  useEffect(() => {
+    if (session) {
+      dispatch(loginSuccess({ user: session.user, token: session.token }));
+    } else if (wpUser) {
+      dispatch(loginSuccess({ user: wpUser, token: token }));
+    }
+  }, [useSession, useGetCurrentUserQuery, useSelector]);
 
   return (
     <div className="min-h-screen flex flex-col">

@@ -8,6 +8,8 @@ const initialState = {
   error: null
 };
 
+// Auth Slice
+console.log('This is the authSlice');
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -18,8 +20,8 @@ const authSlice = createSlice({
     },
     loginSuccess(state, action) {
       state.loading = false;
-      state.user = action.payload.user;
       state.token = action.payload.token;
+      state.user = action.payload.user;
     },
     loginFailure(state, action) {
       state.loading = false;
