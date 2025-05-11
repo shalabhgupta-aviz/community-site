@@ -2,35 +2,37 @@
 
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
+import { loginStart, loginSuccess, loginFailure } from '@/store/slices/authSlice';
+import { loginUser, register, setToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   const dispatch = useDispatch();
   const router = useRouter();
   const auth = useSelector((state) => state.auth);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const { loading, error } = auth;
+
+  const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    handleLogin(email, password);
-  };
-
-  const handleLogin = async (email, password) => {
     dispatch(loginStart());
+
     try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: email, password }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
-
-      dispatch(loginSuccess({ user: data.user, token: data.token }));
+      if (isRegister) {
+        await register(username, email, password);
+        const data = await loginUser(email, password);
+        dispatch(loginSuccess({ user: data.user, token: data.token }));
+        setToken(data.token);
+      } else {
+        const data = await loginUser(email, password);
+        dispatch(loginSuccess({ user: data.user, token: data.token }));
+        setToken(data.token);
+      }
       router.push('/profile');
     } catch (err) {
       dispatch(loginFailure(err.message));
@@ -38,52 +40,109 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6">
-      <h1 className="text-3xl font-bold text-center mb-8">Login</h1>
-      
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-lg">
+        <h1 className="text-2xl font-semibold mb-6 text-center">
+          {isRegister ? 'Create your account' : 'Make the most of your professional life'}
+        </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            required
-          />
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {isRegister && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Username</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+          )}
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            required
-          />
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              required
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              required
+            />
+          </div>
+
+          {error && (
+            <div className="text-red-600 text-sm">{error}</div>
+          )}
+
+          <div className="text-xs text-gray-500">
+            By clicking {isRegister ? 'Create account' : 'Sign in'}, you agree to our{' '}
+            <a href="#" className="text-blue-600 underline">Terms</a>,{' '}
+            <a href="#" className="text-blue-600 underline">Privacy Policy</a>, and{' '}
+            <a href="#" className="text-blue-600 underline">Cookie Policy</a>.
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+          >
+            {loading ? 'Loading...' : isRegister ? 'Agree & Join' : 'Sign in'}
+          </button>
+
+          <div className="relative py-2 text-center text-sm text-gray-400">
+            <span className="bg-white px-2">or</span>
+            <div className="absolute inset-x-0 top-1/2 border-t border-gray-200" />
+          </div>
+
+          <button
+            type="button"
+            className="w-full flex items-center justify-center gap-3 py-2 border rounded-md hover:bg-gray-50"
+            onClick={() => signIn('google')}
+          >
+            <img src='/google.svg' alt="Google" className="h-5 w-5" />
+            Continue with Google
+          </button>
+
+          <button
+            type="button"
+            className="w-full flex items-center justify-center gap-3 py-2 border rounded-md hover:bg-gray-50"
+            onClick={() => signIn('linkedin')}
+          >
+            <img src="/linkedin.svg" alt="LinkedIn" className="h-5 w-5" />
+            Continue with LinkedIn
+          </button>
+        </form>
+
+        <div className="mt-6 text-center text-sm">
+          {isRegister ? (
+            <>
+              Already have an account?{' '}
+              <button onClick={() => setIsRegister(false)} className="text-blue-600 underline">
+                Sign in
+              </button>
+            </>
+          ) : (
+            <>
+              New to the community?{' '}
+              <button onClick={() => setIsRegister(true)} className="text-blue-600 underline">
+                Create one
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

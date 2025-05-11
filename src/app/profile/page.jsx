@@ -1,17 +1,45 @@
 'use client';
 
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { useGetCurrentUserQuery } from '@/store/api/wpApi';
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { logout } from '@/store/slices/authSlice';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 export default function ProfilePage() {
-  const { data: user, error, isLoading } = useGetCurrentUserQuery();
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const user = session?.user;
 
-  if (isLoading) return <div className="p-4">Loading...</div>;
-  if (error) return <div className="p-4 text-red-500">Failed to fetch user profile</div>;
-  if (!user) return <div className="p-4">Please log in to view your profile</div>;
+  const handleLogout = () => {
+    dispatch(logout());
+    router.push('/login');
+  };
+
+
+  
+
+  useEffect(() => {
+    console.log('user', user);
+  }, [user]);
+  if (status === 'loading') return <div className="p-4">Loading...</div>;
+  if (!session) return <div className="p-4 text-red-500">Please log in to view your profile</div>;
 
   return (
+    <ProtectedRoute>
     <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">My Profile</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">My Profile</h1>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+        >
+          Logout
+        </button>
+      </div>
 
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <div className="flex items-center mb-6">
@@ -49,5 +77,6 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }
