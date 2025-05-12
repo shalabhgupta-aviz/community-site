@@ -1,18 +1,27 @@
+// src/components/Headers.jsx
 "use client";
 
 import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout as logoutAction } from '@/store/slices/authSlice';
 import { logout as logoutHelper } from '@/lib/auth';
+import { signOut, useSession } from 'next-auth/react';
 
 export default function Header() {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
   const token = useSelector((state) => state.auth.token);
+  const { data: session } = useSession(); // ✅ Google/LinkedIn session support
 
   const handleLogout = () => {
-    logoutHelper();
-    dispatch(logoutAction());
+    if (session) {
+      // Google/LinkedIn logout
+      signOut({ callbackUrl: '/login' });
+    } else {
+      // JWT logout
+      logoutHelper();
+      dispatch(logoutAction());
+    }
   };
 
   const isLoggedIn = !!token && !!user;

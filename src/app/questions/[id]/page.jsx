@@ -23,9 +23,9 @@ export default function QuestionPage({ params }) {
     const fetchQuestion = async () => {
       try {
         const questionData = await getQuestionDetails(id);
-        const repliesData = await getRepliesForQuestion(id);
         setQuestion(questionData);
-        setReplies(repliesData);
+        console.log("questionData", questionData);
+        setReplies(questionData.latest_replies);
       } catch (err) {
         setError('Failed to load question');
         console.error(err);
@@ -33,23 +33,22 @@ export default function QuestionPage({ params }) {
         setLoading(false);
       }
     };
-
     if (id) {
       fetchQuestion();
     }
   }, [id]);
 
   const handleSubmitReply = async (e) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem('token'); // Assuming token is stored in localStorage
-      const newReply = await createReply(id, replyContent, token);
-      setReplies([...replies, newReply]);
-      setReplyContent('');
-      setIsAccordionOpen(false);
-    } catch (err) {
-      console.error('Failed to submit reply:', err);
-    }
+    // e.preventDefault();
+    // try {
+    //   const token = localStorage.getItem('token'); // Assuming token is stored in localStorage
+    //   const newReply = await createReply(id, replyContent, token);
+    //   setReplies([...replies, newReply]);
+    //   setReplyContent('');
+    //   setIsAccordionOpen(false);
+    // } catch (err) {
+    //   console.error('Failed to submit reply:', err);
+    // }
   };
 
   if (loading) {
@@ -61,30 +60,32 @@ export default function QuestionPage({ params }) {
   }
 
   if (!question) {
-    return <div className="p-4">Question not found</div>;
+    return <div className="p-4">Question not found </div>;
   }
 
   return (
     <div className="max-w-4xl mx-auto p-4">
+      <p>Test</p>
       <h1 className="text-3xl font-bold mb-6">{decodeHtml(question.title?.rendered)}</h1>
 
       <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
         {question.content?.rendered ? (
-          <div 
+          <div
             className="text-gray-600 mb-4"
             dangerouslySetInnerHTML={{ __html: decodeHtml(question.content.rendered) }}
           />
         ) : (
-          <div className="text-gray-200 mb-4 italic">
-            No description available
-          </div>
+          <>
+          </>
         )}
-        <div className="text-sm text-gray-500">
-          <span>Status: {question.status}</span>
-          <span className="mx-2">•</span>
-          <span>Type: {question.type}</span>
-          <span className="mx-2">•</span>
+        <div className="text-sm text-gray-500 flex justify-between items-center">
           <span>{new Date(question.date).toLocaleDateString()}</span>
+          <span className='flex items-center gap-2'>
+            <img src={question.bbp_extra.author.avatar} alt={question.bbp_extra.author.name} className="w-6 h-6 rounded-full" />
+            <span className='display-inline'>
+              {question.bbp_extra.author.name}
+            </span>
+          </span>
         </div>
       </div>
 
@@ -99,11 +100,11 @@ export default function QuestionPage({ params }) {
             <span>Reply to: {decodeHtml(question.title?.rendered)}</span>
             <span className={`transform transition-transform duration-1000 ${isAccordionOpen ? 'rotate-180' : ''}`}>▼</span>
           </button>
-          
-          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isAccordionOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}` }>
+
+          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isAccordionOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
             <form onSubmit={handleSubmitReply} className="mt-2 p-4 bg-white rounded-lg border">
               <RichTextEditor />
-              <button 
+              <button
                 type="submit"
                 className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 mt-4"
               >

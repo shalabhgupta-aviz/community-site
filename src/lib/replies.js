@@ -3,33 +3,15 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ✅ Get replies of a specific question
+// src/lib/replies.js
+
 export async function getRepliesForQuestion(questionId) {
-  const response = await fetch(`${API_BASE_URL}/reply?parent=${questionId}`);
-  return response.json();
+  const res = await fetch(`${API_BASE_URL}/reply?topic_id=${questionId}&per_page=10`);
+  if (!res.ok) throw new Error('Failed to fetch replies');
+  return res.json();
 }
 
-// ✅ Get replies for each question in a topic (includes latest reply)
-export async function getLatestRepliesInTopic(topicId) {
-  const response = await fetch(`${API_BASE_URL}/topic?parent=${topicId}`);
-  const questions = await response.json();
 
-  const enriched = await Promise.all(
-    questions.map(async (question) => {
-      const repliesRes = await fetch(`${API_BASE_URL}/reply?parent=${question.id}`);
-      const replies = await repliesRes.json();
-
-      if (replies?.length > 0) {
-        const sorted = replies.sort((a, b) => new Date(b.date) - new Date(a.date));
-        question.latest_reply = sorted[0].content.rendered;
-      } else {
-        question.latest_reply = null;
-      }
-      return question;
-    })
-  );
-
-  return enriched;
-}
 
 // ✅ Get replies directly from a topic
 export async function getReplyOfTopic(topicId) {

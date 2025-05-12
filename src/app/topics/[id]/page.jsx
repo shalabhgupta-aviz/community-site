@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getTopicDetails } from '@/lib/topics';
 import { getQuestionsOfTopic } from '@/lib/questions';
-import { getLatestRepliesInTopic } from '@/lib/replies'
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
 
 export default function TopicPage() {
@@ -15,17 +14,14 @@ export default function TopicPage() {
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [latestReply, setLatestReply] = useState(null);
     useEffect(() => {
         const fetchTopic = async () => {
             try {
                 const topicData = await getTopicDetails(id);
                 const questionData = await getQuestionsOfTopic(id);
-                const latestReplyData = await getLatestRepliesInTopic(id);
-                console.log('Latest reply:', latestReplyData);
                 setTopic(topicData);
                 setQuestions(questionData);
-                setLatestReply(latestReplyData);
+                console.log("questionData", questionData);
             } catch (err) {
                 setError('Failed to load topic');
                 console.error(err);
@@ -45,6 +41,7 @@ export default function TopicPage() {
 
     return (
         <div className="max-w-4xl mx-auto p-4">
+
             <h1 className="text-3xl font-bold mb-6">{decodeHtml(topic.title?.rendered)}</h1>
 
             <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
@@ -72,26 +69,15 @@ export default function TopicPage() {
                             className="block bg-white p-4 border rounded shadow-sm hover:border-gray-300"
                         >
                             <h3 className="font-medium">{decodeHtml(question.title?.rendered)}</h3>
-                            {
-                                question.id === latestReply[index].id && (
-                                    <div className="mt-2 text-gray-400 italic">
-                                        <span dangerouslySetInnerHTML={{ __html: decodeHtml(latestReply[index].latest_reply) }} />
-                                    </div>
-                                ) || (
-                                    <div className="mt-2 text-gray-400 italic">
-                                        No latest reply yet
-                                    </div>
-                                )
-                            }
+                            {question.latest_reply && (
+                                <div className="mt-2 text-gray-400 italic text-ellipsis overflow-hidden whitespace-nowrap">
+                                    <span dangerouslySetInnerHTML={{ __html: decodeHtml(question.latest_reply.content.rendered).substring(0, 50) + '...'} } />
+                                </div>
+                            )}
                             <div
                                 className="text-gray-600 mt-2"
                                 dangerouslySetInnerHTML={{ __html: decodeHtml(question.content?.rendered) }}
                             />
-                            {question.latest_reply && (
-                                <div className="mt-2 text-gray-400 italic">
-                                    Latest reply: <span dangerouslySetInnerHTML={{ __html: decodeHtml(question.latest_reply) }} />
-                                </div>
-                            )}
                         </Link>
                     ))
                 )}

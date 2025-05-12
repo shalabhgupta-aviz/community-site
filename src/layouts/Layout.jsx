@@ -7,6 +7,7 @@ import Header from '@/components/Headers';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSession } from 'next-auth/react';
 import { useGetCurrentUserQuery } from '@/store/api/wpApi';
+import { loginSuccess } from '@/store/slices/authSlice';
 
 export default function Layout({ children }) {
   const [user, setUser] = useState(null);

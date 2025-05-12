@@ -1,22 +1,78 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '@/store/slices/authSlice';
-import { loginUser, register, setToken } from '@/lib/auth';
+import { getToken, loginUser, register, setToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 
 export default function LoginPage() {
   const dispatch = useDispatch();
   const router = useRouter();
   const auth = useSelector((state) => state.auth);
   const { loading, error } = auth;
+  const { data: session, status } = useSession();
 
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  const token = useSelector((state) => state.auth.token);
+  const user = useSelector((state) => state.auth.user);
+  
+  useEffect(() => {
+    if (token && user) {
+      router.replace('/profile');
+    }
+  }, [token, user]);
+  
+  useEffect(() => {
+    const token = getToken();
+    if (session?.user) {
+      fetch('/api/social-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: session.user.email, name: session.user.name }),
+      })
+        .then((res) => res.json())
+        .then(({ user }) => {
+          if (user) {
+            dispatch(loginSuccess({ user, token: token || 'social' }));
+            router.replace('/profile'); // redirect if needed
+          }
+        });
+    }
+  }, [session]);
+
+  useEffect(() => {
+    const autoLoginWithSocial = async () => {
+      if (session?.user?.email && session?.user?.name) {
+        try {
+          const res = await fetch('/api/social-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: session.user.email,
+              username: session.user.name
+            })
+          });
+
+          const data = await res.json();
+          if (data.token && data.user) {
+            dispatch(loginSuccess({ token: data.token, user: data.user }));
+            setToken(data.token);
+            router.replace('/profile');
+          }
+        } catch (err) {
+          console.error('Social login failed', err);
+        }
+      }
+    };
+
+    autoLoginWithSocial();
+  }, [session, dispatch, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,7 +90,6 @@ export default function LoginPage() {
         const data = await loginUser(email, password);
 
         if (data.token) {
-          console.log('data-login', { user: data.user, token: data.token });
           dispatch(loginSuccess({ user: data.user, token: data.token }));
           setToken(data.token);
         }
@@ -115,7 +170,7 @@ export default function LoginPage() {
           <button
             type="button"
             className="w-full flex items-center justify-center gap-3 py-2 border rounded-md hover:bg-gray-50"
-            onClick={() => signIn('google')}
+            onClick={() => signIn('google', { callbackUrl: '/login' })}
           >
             <img src='/google.svg' alt="Google" className="h-5 w-5" />
             Continue with Google
@@ -124,7 +179,7 @@ export default function LoginPage() {
           <button
             type="button"
             className="w-full flex items-center justify-center gap-3 py-2 border rounded-md hover:bg-gray-50"
-            onClick={() => signIn('linkedin')}
+            onClick={() => signIn('linkedin', { callbackUrl: '/login' })}
           >
             <img src="/linkedin.svg" alt="LinkedIn" className="h-5 w-5" />
             Continue with LinkedIn

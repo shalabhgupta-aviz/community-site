@@ -22,6 +22,9 @@ export const authOptions = {
   callbacks: {
     async jwt({ token, user, account }) {
       if (account && user) {
+        console.log('account-google', account);
+        console.log('user-google', user);
+        console.log('token-google', token);
         token.accessToken = account.access_token;
         token.user = user;
       }

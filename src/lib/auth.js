@@ -11,6 +11,7 @@ export async function loginUser(username, password) {
     body: JSON.stringify({ username, password })
   });
 
+  
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Login failed');
 
@@ -21,12 +22,15 @@ export async function loginUser(username, password) {
   return { token, user };
 }
 
+
+
+
 export function setToken(token) {
   Cookies.set('token', token, { expires: 7, secure: true, sameSite: 'Strict' });
 }
 
 export function getToken() {
-  
+
   console.log('Cookies', Cookies.get('token'));
   return Cookies.get('token');
 }
@@ -46,10 +50,9 @@ export async function register(username, email, password) {
 
 export function logout() {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('user');
     removeToken();
 
-    // Clear cookies
+    // Clear all cookies (if needed)
     document.cookie.split(';').forEach(c => {
       document.cookie = c
         .replace(/^ +/, '')
