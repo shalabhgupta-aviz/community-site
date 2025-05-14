@@ -30,6 +30,7 @@ export default function Layout({ children }) {
     }
   }, [useSession, useGetCurrentUserQuery, useSelector]);
 
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
