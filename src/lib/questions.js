@@ -14,7 +14,7 @@ export async function getQuestionDetails(questionId) {
   return response.json();
 }
 
-export async function getQuestions() {
-  // const response = await fetch(`${API_BASE_URL}/topic`);
-  // return response.json();
+export async function getQuestions(page = 1, perPage = 10) {
+  const response = await fetch(`${API_BASE_URL}/topic?per_page=${perPage}&page=${page}`);
+  return response.json();
 }

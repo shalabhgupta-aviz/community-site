@@ -6,11 +6,18 @@ import { SessionProvider, useSession } from 'next-auth/react';
 import { getToken, getUserProfile } from '@/lib/auth';
 import { loginSuccess } from '@/store/slices/authSlice';
 import { useEffect, useState } from 'react';
+// import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import loadingSpinner from '/public/animations/loaderSpinner.json'
+import Lottie from 'lottie-react';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function ClientProvider({ children }) {
   return (
     <SessionProvider>
-      <ReduxSessionSync>{children}</ReduxSessionSync>
+      <ReduxSessionSync>
+        {children}
+        <SpeedInsights />
+      </ReduxSessionSync>
     </SessionProvider>
   );
 }
@@ -47,6 +54,14 @@ function ReduxSessionSync({ children }) {
     sync();
   }, [session]);
 
-  if (!isReady || status === 'loading') return <div className="p-4">Loading session...</div>;
+  if (!isReady || status === 'loading') return (
+    <div className="flex justify-center items-center min-h-screen">
+      <Lottie
+        animationData={loadingSpinner}
+        loop={true}
+        style={{ width: '200px', height: '200px' }}
+      />
+    </div>
+  );
   return <Provider store={store}>{children}</Provider>;
 }

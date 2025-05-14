@@ -6,6 +6,9 @@ import { loginStart, loginSuccess, loginFailure } from '@/store/slices/authSlice
 import { getToken, loginUser, register, setToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Lottie from 'lottie-react';
+import loadingSpinner from '/public/animations/loaderSpinner.json';
 
 export default function LoginPage() {
   const dispatch = useDispatch();
@@ -100,16 +103,47 @@ export default function LoginPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Lottie
+          animationData={loadingSpinner}
+          loop={true}
+          style={{ width: '200px', height: '200px' }}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-lg">
-        <h1 className="text-2xl font-semibold mb-6 text-center">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen flex items-center justify-center px-4"
+    >
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="bg-white w-full max-w-md p-6 rounded-lg shadow-lg"
+      >
+        <motion.h1 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="text-2xl font-semibold mb-6 text-center"
+        >
           {isRegister ? 'Create your account' : 'Make the most of your professional life'}
-        </h1>
+        </motion.h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {isRegister && (
-            <div>
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
               <label className="block text-sm font-medium text-gray-700">Username</label>
               <input
                 type="text"
@@ -118,10 +152,14 @@ export default function LoginPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 required
               />
-            </div>
+            </motion.div>
           )}
 
-          <div>
+          <motion.div
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
             <label className="block text-sm font-medium text-gray-700">Email</label>
             <input
               type="email"
@@ -130,9 +168,13 @@ export default function LoginPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
               required
             />
-          </div>
+          </motion.div>
 
-          <div>
+          <motion.div
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
             <label className="block text-sm font-medium text-gray-700">Password</label>
             <input
               type="password"
@@ -141,52 +183,91 @@ export default function LoginPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
               required
             />
-          </div>
+          </motion.div>
 
-          {error && (
-            <div className="text-red-600 text-sm">{error}</div>
-          )}
+          <AnimatePresence>
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-red-600 text-sm"
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <div className="text-xs text-gray-500">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="text-xs text-gray-500"
+          >
             By clicking {isRegister ? 'Create account' : 'Sign in'}, you agree to our{' '}
             <a href="#" className="text-blue-600 underline">Terms</a>,{' '}
             <a href="#" className="text-blue-600 underline">Privacy Policy</a>, and{' '}
             <a href="#" className="text-blue-600 underline">Cookie Policy</a>.
-          </div>
+          </motion.div>
 
-          <button
+          <motion.button
             type="submit"
             disabled={loading}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
           >
-            {loading ? 'Loading...' : isRegister ? 'Agree & Join' : 'Sign in'}
-          </button>
+            {loading ? (
+              <Lottie
+                animationData={loadingSpinner}
+                loop={true}
+                style={{ width: '24px', height: '24px', margin: '0 auto' }}
+              />
+            ) : isRegister ? 'Agree & Join' : 'Sign in'}
+          </motion.button>
 
-          <div className="relative py-2 text-center text-sm text-gray-400">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+            className="relative py-2 text-center text-sm text-gray-400"
+          >
             <span className="bg-white px-2">or</span>
             <div className="absolute inset-x-0 top-1/2 border-t border-gray-200" />
-          </div>
+          </motion.div>
 
-          <button
+          <motion.button
             type="button"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1 }}
             className="w-full flex items-center justify-center gap-3 py-2 border rounded-md hover:bg-gray-50"
             onClick={() => signIn('google', { callbackUrl: '/login' })}
           >
             <img src='/google.svg' alt="Google" className="h-5 w-5" />
             Continue with Google
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
             type="button"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1 }}
             className="w-full flex items-center justify-center gap-3 py-2 border rounded-md hover:bg-gray-50"
             onClick={() => signIn('linkedin', { callbackUrl: '/login' })}
           >
             <img src="/linkedin.svg" alt="LinkedIn" className="h-5 w-5" />
             Continue with LinkedIn
-          </button>
+          </motion.button>
         </form>
 
-        <div className="mt-6 text-center text-sm">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2 }}
+          className="mt-6 text-center text-sm"
+        >
           {isRegister ? (
             <>
               Already have an account?{' '}
@@ -202,8 +283,8 @@ export default function LoginPage() {
               </button>
             </>
           )}
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }

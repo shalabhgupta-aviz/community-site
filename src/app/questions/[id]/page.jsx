@@ -79,12 +79,14 @@ export default function QuestionPage({ params }) {
           </>
         )}
         <div className="text-sm text-gray-500 flex justify-between items-center">
-          <span>{new Date(question.date).toLocaleDateString()}</span>
-          <span className='flex items-center gap-2'>
+            <span>{new Date(question.date).toLocaleDateString()}</span>
+            <span className='flex'>
+          <Link href={`/users/${question.bbp_extra.author.username}`} className='flex items-center gap-2'>
             <img src={question.bbp_extra.author.avatar} alt={question.bbp_extra.author.name} className="w-6 h-6 rounded-full" />
             <span className='display-inline'>
               {question.bbp_extra.author.name}
             </span>
+          </Link>
           </span>
         </div>
       </div>
