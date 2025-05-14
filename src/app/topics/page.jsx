@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getTopics } from '@/lib/topics';
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
-import Lottie from 'lottie-react';
-import loadingSpinner from '/public/animations/loaderSpinner.json'
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { motion } from 'framer-motion';
 
 export default function TopicsPage() {
@@ -31,11 +30,7 @@ export default function TopicsPage() {
 
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen">
-      <Lottie
-        animationData={loadingSpinner}
-        loop={true}
-        style={{ width: '200px', height: '200px' }}
-      />
+      <LoadingSpinner />
     </div>;
   }
 

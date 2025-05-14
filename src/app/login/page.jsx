@@ -7,8 +7,7 @@ import { getToken, loginUser, register, setToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Lottie from 'lottie-react';
-import loadingSpinner from '/public/animations/loaderSpinner.json';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function LoginPage() {
   const dispatch = useDispatch();
@@ -106,11 +105,7 @@ export default function LoginPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Lottie
-          animationData={loadingSpinner}
-          loop={true}
-          style={{ width: '200px', height: '200px' }}
-        />
+        <LoadingSpinner />
       </div>
     );
   }
@@ -219,11 +214,7 @@ export default function LoginPage() {
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
           >
             {loading ? (
-              <Lottie
-                animationData={loadingSpinner}
-                loop={true}
-                style={{ width: '24px', height: '24px', margin: '0 auto' }}
-              />
+              <LoadingSpinner />
             ) : isRegister ? 'Agree & Join' : 'Sign in'}
           </motion.button>
 

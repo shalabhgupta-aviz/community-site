@@ -9,8 +9,7 @@ import { getRepliesByUser } from '@/lib/users';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
 import { motion, AnimatePresence } from 'framer-motion';
-import Lottie from 'lottie-react';
-import loadingSpinner from '/public/animations/loaderSpinner.json';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo('en-US');
@@ -58,11 +57,7 @@ export default function MyRepliesPage() {
   if (loading && page === 1) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Lottie
-          animationData={loadingSpinner}
-          loop={true}
-          style={{ width: '200px', height: '200px' }}
-        />
+        <LoadingSpinner />
       </div>
     );
   }
@@ -120,11 +115,7 @@ export default function MyRepliesPage() {
               exit={{ opacity: 0 }}
               className="flex justify-center p-4"
             >
-              <Lottie
-                animationData={loadingSpinner}
-                loop={true}
-                style={{ width: '100px', height: '100px' }}
-              />
+              <LoadingSpinner />
             </motion.div>
           ) : filteredReplies.length === 0 ? (
             <motion.p 
@@ -183,11 +174,7 @@ export default function MyRepliesPage() {
 
               {loading && page > 1 && (
                 <div className="flex justify-center p-4">
-                  <Lottie
-                    animationData={loadingSpinner}
-                    loop={true}
-                    style={{ width: '100px', height: '100px' }}
-                  />
+                  <LoadingSpinner />
                 </div>
               )}
             </motion.div>

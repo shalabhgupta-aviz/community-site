@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 
 export default function TopicCard({ title, content, author, date, id, replyCount }) {

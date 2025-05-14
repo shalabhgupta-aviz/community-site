@@ -31,6 +31,7 @@ export default function CreateQuestionPage() {
         setTopics(topicsData);
         setTags(tagsData);
         
+        
         if (topicsData.length > 0) {
           setSelectedTopic(topicsData[0].id.toString());
         }

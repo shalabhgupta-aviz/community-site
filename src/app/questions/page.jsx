@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
 import { getQuestions } from '@/lib/questions';
 import { motion } from 'framer-motion';
-import Lottie from 'lottie-react';
-import loadingSpinner from '/public/animations/loaderSpinner.json';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState([]);
@@ -40,11 +39,7 @@ export default function QuestionsPage() {
 
   if (loading && page === 1) return (
     <div className="flex justify-center items-center min-h-screen">
-      <Lottie
-        animationData={loadingSpinner}
-        loop={true}
-        style={{ width: '200px', height: '200px' }}
-      />
+      <LoadingSpinner />
     </div>
   );
   if (error) return <div className="p-4 text-red-500">{error}</div>;
@@ -129,11 +124,7 @@ export default function QuestionsPage() {
 
           {loading && page > 1 && (
             <div className="flex justify-center p-4">
-              <Lottie
-                animationData={loadingSpinner}
-                loop={true}
-                style={{ width: '100px', height: '100px' }}
-              />
+              <LoadingSpinner />
             </div>
           )}
         </div>
