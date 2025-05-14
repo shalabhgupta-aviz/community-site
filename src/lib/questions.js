@@ -18,3 +18,28 @@ export async function getQuestions(page = 1, perPage = 10) {
   const response = await fetch(`${API_BASE_URL}/topic?per_page=${perPage}&page=${page}`);
   return response.json();
 }
+
+
+export async function createQuestion(forumId, title, content, token, question_tag) {
+  const res = await fetch(`${API_BASE_URL}/topic`, {  
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      title,
+      content,
+      status: 'publish',
+      forum_id: forumId,
+      topic_tag: question_tag,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Failed to create question');
+  }
+
+  return res.json();
+}

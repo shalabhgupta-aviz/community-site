@@ -71,8 +71,7 @@ export default function Header() {
                     exit={{ opacity: 0, x: -10 }}
                     className="flex space-x-4"
                   >
-                    <Link href="/create-topic" className="px-3 py-2 rounded-md hover:bg-gray-100">Create Topic</Link>
-                    <Link href="/my-replies" className="px-3 py-2 rounded-md hover:bg-gray-100">My Replies</Link>
+                    <Link href="/create-question" className="px-3 py-2 rounded-md hover:bg-gray-100">Create Questions</Link>
                   </motion.div>
                 )}
               </AnimatePresence>

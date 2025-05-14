@@ -41,14 +41,48 @@ export async function updateUserProfile(userData) {
       description: userData.description,
       name: userData.name,
       email: userData.email,
-      image: userData.image
+      // image: userData.image
     }),
   });
-
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.message || 'Failed to update profile');
   }
 
   return res.json();
+}
+
+export async function uploadUserAvatar(file) {
+  const token = document.cookie.split('; ')
+    .find(row => row.startsWith('token='))
+    ?.split('=')[1];
+  if (!token) throw new Error('Not authenticated');
+
+  // 1) Upload the file to /media
+  const form = new FormData();
+  form.append('file', file);
+  const mediaRes = await fetch(`${API_BASE_URL}/media`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  if (!mediaRes.ok) throw new Error('Media upload failed');
+  const media = await mediaRes.json();
+
+  // 2) Tell WP this is your new avatar by storing the attachment ID
+  const userRes = await fetch(`${API_BASE_URL}/users/me`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      meta: { custom_avatar: media.id },
+    }),
+  });
+  if (!userRes.ok) {
+    const err = await userRes.json();
+    throw new Error(err.message || 'Failed to set avatar');
+  }
+  return userRes.json();
 }

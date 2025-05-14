@@ -4,7 +4,7 @@
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useSelector, useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
-import { logout as logoutAction } from '@/store/slices/authSlice';
+import { logout as logoutAction, setUser } from '@/store/slices/authSlice';
 import { logout as logoutHelper } from '@/lib/auth';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ import { useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCamera } from 'react-icons/fa';
-import { updateUserProfile } from '@/lib/users';
+import { updateUserProfile, uploadUserAvatar } from '@/lib/users';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
@@ -56,27 +56,24 @@ export default function ProfilePage() {
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(URL.createObjectURL(file));
-      
-      try {
-        const formData = new FormData();
-        formData.append('avatar', file);
-        formData.append('image', file);
-        
-        const response = await updateUserProfile({
-          image: file
-        });
-        
-        if (response.success) {
-          toast.success('Profile image updated successfully');
-          setEditedUser({...editedUser, image: URL.createObjectURL(file)});
-        }
-      } catch (err) {
-        console.error('Failed to upload image:', err);
-        toast.error('Failed to upload image');
-        setSelectedImage(null);
+    if (!file) return;
+
+    // show preview immediately
+    setSelectedImage(URL.createObjectURL(file));
+
+    try {
+      // pass the File directly
+      const response = await uploadUserAvatar(file);
+
+      if (response.meta?.custom_avatar) {
+        toast.success('Profile image updated successfully');
+        // we know WP stored it, so keep the preview
+        setEditedUser({...editedUser, image: URL.createObjectURL(file)});
       }
+    } catch (err) {
+      console.error('Failed to upload image:', err);
+      toast.error('Failed to upload image');
+      setSelectedImage(null);
     }
   };
 
@@ -107,12 +104,19 @@ export default function ProfilePage() {
         email: editedUser.email,
         url: editedUser.website,
         description: editedUser.bio,
-        image: editedUser.image
       };
 
       const response = await updateUserProfile(userData);
-
-      if (response.success) {
+      if (response) {
+        // Update Redux store with new user data
+        dispatch(setUser({
+          ...user,
+          name: editedUser.name,
+          email: editedUser.email,
+          url: editedUser.website,
+          description: editedUser.bio
+        }));
+        
         toast.success('Profile updated successfully');
         setIsEditing(false);
       } else {
