@@ -1,18 +1,11 @@
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Noto_Sans } from 'next/font/google';
 import './globals.css';
 import Layout from '@/layouts/Layout';
-import ClientProvider from '@/components/ClientProvider'; // 👈 New
-import { SessionProvider } from 'next-auth/react';
+import ClientProvider from '@/components/ClientProvider';
 
-
-const geistSans = Geist({
+const notoSans = Noto_Sans({
   subsets: ['latin'],
-  variable: '--font-geist-sans',
-});
-
-const geistMono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-geist-mono',
+  variable: '--font-noto-sans',
 });
 
 export const metadata = {
@@ -22,14 +15,13 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${notoSans.variable}`}>
       <body className="antialiased">
-        <ClientProvider> {/* ✅ Now Redux only runs on client */}
+        <ClientProvider>
           <Layout>
             {children}
           </Layout>
         </ClientProvider>
-        
       </body>
     </html>
   );

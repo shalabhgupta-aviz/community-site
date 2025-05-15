@@ -1,136 +1,222 @@
 // src/components/Headers.jsx
-"use client";
+'use client';
 
 import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout as logoutAction } from '@/store/slices/authSlice';
-import { logout as logoutHelper } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { useEffect } from 'react';
-import toast from 'react-hot-toast';
+import { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FiBell } from 'react-icons/fi';
+import Image from 'next/image';
+import { useNotifications } from '@/hooks/useNotifications';
 
 export default function Header() {
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.auth.user);
-  const token = useSelector((state) => state.auth.token);
-  const { data: session } = useSession();
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const reduxUser = useSelector((s) => s.auth.user);
+  const user = reduxUser || session?.user;
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const { notifications, loading: notificationsLoading, error: notificationsError } = useNotifications();
+  
+  const notificationsRef = useRef(null);
+  const profileDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
-      if (session) {
-        await signOut({ callbackUrl: '/login' });
-        toast.success('Logged out successfully');
-      } else {
-        logoutHelper();
-        dispatch(logoutAction());
-        toast.success('Logged out successfully');
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
+      setIsLoggingOut(true);
+      setShowProfileDropdown(false);
+      await signOut({ callbackUrl: '/login' });
+      dispatch(logoutAction());
+      router.push('/login');
+    } catch (err) {
+      console.error('Logout failed:', err);
       toast.error('Failed to logout. Please try again.');
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
-  useEffect(() => {
-    if (!user && token) {
-      toast.error('User session is invalid. Please login again.');
-      handleLogout();
-    }
-  }, [user, token]);
-
-  const isLoggedIn = !!token && !!user;
-  console.log("user", user);
-  const userName = user?.first_name || user?.last_name || user?.username || 'User';
+  const handleNotificationClick = () => {
+    setShowNotifications(false);
+  };
 
   return (
-    <motion.header 
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      exit={{ y: -100 }}
-      transition={{ duration: 0.5 }}
-      className="bg-white shadow-sm"
+    <motion.header
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur shadow-md"
     >
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <motion.div 
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-center space-x-8"
-          >
-            <Link href="/" className="text-xl font-bold">Community</Link>
-            <div className="flex space-x-4">
-              <Link href="/topics" className="px-3 py-2 rounded-md hover:bg-gray-100">Topics</Link>
-              <Link href="/questions" className="px-3 py-2 rounded-md hover:bg-gray-100">Questions</Link>
-              <AnimatePresence>
-                {isLoggedIn && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    className="flex space-x-4"
-                  >
-                    <Link href="/create-question" className="px-3 py-2 rounded-md hover:bg-gray-100">Create Questions</Link>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
+      <nav className="max-w-7xl mx-auto px-6 md:px-8 lg:px-12 h-16 flex items-center justify-between">
+        {/* Logo */}
+        <Link href="/" className="flex items-center">
+          <Image src="/aviz-logo.png" alt="Aviz Community" width={170} height={100} />
+        </Link>
 
-          <motion.div 
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-center space-x-4"
-          >
-            <AnimatePresence mode="wait">
-              {isLoggedIn ? (
-                <motion.div
-                  key="logged-in"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="flex items-center space-x-4"
-                >
-                  <Link href="/profile" className="px-3 py-2 rounded-md hover:bg-gray-100 flex items-center space-x-2">
-                    {user?.avatar ? (
-                      <img
-                        src={user.avatar}
-                        alt="Profile avatar"
-                        className={`w-8 h-8 rounded-full ${user?.username ? 'mr-2' : ''}`}
-                        onError={(e) => {
-                          e.target.src = '/default-avatar.png';
-                          e.target.onerror = null;
-                        }}
-                      />
-                    ) : (
-                      <div className={`w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center`}>
-                        <span className="text-gray-500">{userName.charAt(0).toUpperCase()}</span>
-                      </div>
-                    )}
-                  </Link>
-                  <button 
-                    onClick={handleLogout} 
-                    className="px-3 py-2 rounded-md hover:bg-gray-100"
-                  >
-                    Logout
-                  </button>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="logged-out"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="flex items-center space-x-4"
-                >
-                  <Link href="/login" className="px-3 py-2 rounded-md hover:bg-gray-100">Login</Link>
-                  <Link href="/register" className="px-3 py-2 rounded-md hover:bg-gray-100">Register</Link>
-                </motion.div>
+        {/* Center links */}
+        <ul className="hidden md:flex space-x-6 text-gray-700 font-medium">
+          <li>
+            <Link href="/" className="hover:text-indigo-600 transition">
+              Home
+            </Link>
+          </li>
+          <li>
+            <Link href="/questions" className="hover:text-indigo-600 transition">
+              Open Forum
+            </Link>
+          </li>
+        </ul>
+
+        {/* Right controls */}
+        <div className="flex items-center space-x-4">
+          <div className="relative" ref={notificationsRef}>
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="p-2 rounded-full hover:bg-gray-100 transition"
+            >
+              <FiBell className="w-5 h-5 text-gray-600" />
+              {notifications.length > 0 && (
+                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {notifications.length}
+                </span>
               )}
-            </AnimatePresence>
-          </motion.div>
+            </button>
+
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <h3 className="font-semibold">Notifications</h3>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {notificationsLoading ? (
+                    <div className="px-4 py-3">
+                      <p className="text-sm">Loading notifications...</p>
+                    </div>
+                  ) : notificationsError ? (
+                    <div className="px-4 py-3">
+                      <p className="text-sm text-red-500">Error loading notifications</p>
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="px-4 py-3">
+                      <p className="text-sm">No new notifications</p>
+                    </div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div 
+                        key={notification.id} 
+                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer"
+                        onClick={handleNotificationClick}
+                      >
+                        <p className="text-sm">{notification.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <AnimatePresence mode="wait">
+            {status === 'loading' ? (
+              // small pulse while NextAuth is initializing
+              <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+            ) : user ? (
+              // logged-in
+              <motion.div
+                key="logged-in"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="flex items-center space-x-3 relative"
+                ref={profileDropdownRef}
+              >
+                <button 
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="flex items-center space-x-2 mr-1"
+                >
+                  {user.avatar || user.image ? (
+                    <Image
+                      src={user.avatar || user.image}
+                      alt="Avatar"
+                      width={32}
+                      height={32}
+                      className="rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.src = '/default-avatar.png';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-600">
+                        {user.name?.[0]?.toUpperCase() || '?'}
+                      </span>
+                    </div>
+                  )}
+                </button>
+
+                {showProfileDropdown && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                    <Link 
+                      href="/profile" 
+                      className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                      onClick={() => setShowProfileDropdown(false)}
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 disabled:opacity-50"
+                    >
+                      {isLoggingOut ? 'Logging out…' : 'Logout'}
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            ) : (
+              // not logged-in
+              <motion.div
+                key="logged-out"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="flex space-x-3"
+              >
+                <Link
+                  href="/login"
+                  className="px-4 py-1 rounded-md border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-4 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                >
+                  Register
+                </Link>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </nav>
     </motion.header>

@@ -1,51 +1,46 @@
-"use client";
+'use client';
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { getUser } from '@/lib/auth';
+import { getUser, logout } from '@/lib/auth';
 import Header from '@/components/Headers';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSession } from 'next-auth/react';
 import { useGetCurrentUserQuery } from '@/store/api/wpApi';
 import { loginSuccess } from '@/store/slices/authSlice';
+import { logout as logoutAction } from '@/store/slices/authSlice';
+import Footer from '@/components/Footer';
 
 export default function Layout({ children }) {
   const [user, setUser] = useState(null);
   const dispatch = useDispatch();
   const { data: session } = useSession();
-  const { data: wpUser } = useGetCurrentUserQuery();
   const token = useSelector(state => state.auth.token);
-
-  const handleLogout = () => {
-    // Clear user data and redirect to login
-    localStorage.removeItem('user');
-    setUser(null);
-  };
+const { data: wpUser } = useGetCurrentUserQuery(undefined, {
+  skip: !token
+});
 
   useEffect(() => {
     if (session) {
       dispatch(loginSuccess({ user: session.user, token: session.token }));
     } else if (wpUser) {
-      dispatch(loginSuccess({ user: wpUser, token: token }));
+      dispatch(loginSuccess({ user: wpUser, token }));
+    } else {
+      dispatch(logoutAction());    // ← this logout isn’t imported, so it’s undefined
     }
-  }, [useSession, useGetCurrentUserQuery, useSelector]);
-
+  }, [session, wpUser, token, dispatch]);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
       <main className="flex-grow bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className='pt-15'>
           {children}
         </div>
       </main>
 
-      <footer className="bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <p className="text-center text-gray-500">© 2024 Community. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer/>
     </div>
   );
 }

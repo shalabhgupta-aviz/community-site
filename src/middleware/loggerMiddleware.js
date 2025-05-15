@@ -1,8 +1,14 @@
+// src/middleware/loggerMiddleware.js
 const loggerMiddleware = store => next => action => {
-  if (action.type?.includes('auth/')) {
+  if (
+    action != null &&
+    typeof action === 'object' &&
+    typeof action.type === 'string' &&
+    action.type.startsWith('auth/')
+  ) {
     console.log('[AUTH ACTION]', action);
   }
-  let result = next(action);
-  return result;
+  return next(action);
 };
+
 export default loggerMiddleware;

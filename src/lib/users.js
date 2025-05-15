@@ -24,25 +24,20 @@ export async function getRepliesByUser(userId, page = 1, perPage = 10) {
   return { items: await res.json(), totalPages: parseInt(res.headers.get('x-wp-totalpages')||'1') }
 }
 
-export async function updateUserProfile(userData) {
-  const token = document.cookie.split('; ')
-    .find(row => row.startsWith('token='))
-    ?.split('=')[1];
+export async function updateUserProfile(userData, token, userId) {
+  
+  // const token = document.cookie.split('; ')
+  //   .find(row => row.startsWith('token='))
+  //   ?.split('=')[1];
   console.log(token);
   console.log(userData);
-  const res = await fetch(`${API_BASE_URL}/users/me`, {
+  const res = await fetch(`${API_BASE_URL}/users/${userId}?context=edit`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({
-      url: userData.url,
-      description: userData.description,
-      name: userData.name,
-      email: userData.email,
-      // image: userData.image
-    }),
+    body: JSON.stringify(userData),
   });
   if (!res.ok) {
     const error = await res.json();
@@ -52,10 +47,8 @@ export async function updateUserProfile(userData) {
   return res.json();
 }
 
-export async function uploadUserAvatar(file) {
-  const token = document.cookie.split('; ')
-    .find(row => row.startsWith('token='))
-    ?.split('=')[1];
+export async function uploadUserAvatar(file, token, userId) {
+  console.log('uploadUserAvatar', token);
   if (!token) throw new Error('Not authenticated');
 
   // 1) Upload the file to /media
@@ -70,7 +63,7 @@ export async function uploadUserAvatar(file) {
   const media = await mediaRes.json();
 
   // 2) Tell WP this is your new avatar by storing the attachment ID
-  const userRes = await fetch(`${API_BASE_URL}/users/me`, {
+  const userRes = await fetch(`${API_BASE_URL}/users/${userId}?context=edit`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

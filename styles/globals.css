@@ -5,16 +5,20 @@
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-rgb: 255, 255, 255;
+  --primary: #191153;
+  --primary-light: #2a1c7a;
+  --primary-dark: #0c0829;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
+  font-family: var(--font-noto-sans), sans-serif;
 }
 
 /* Base styles */
 h1, h2, h3, h4, h5, h6 {
-  @apply font-bold;
+  @apply font-bold font-noto-sans;
 }
 
 /* Custom utilities */
@@ -27,15 +31,15 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Form elements */
 input, textarea {
-  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  @apply focus:outline-none focus:ring-2 focus:ring-[#191153] focus:border-transparent font-noto-sans;
 }
 
 /* Buttons */
 button {
-  @apply transition-colors duration-200;
+  @apply transition-colors duration-200 font-noto-sans;
 }
 
 /* Links */
 a {
-  @apply text-blue-600 hover:text-blue-800;
+  @apply text-[#191153] hover:text-[#2a1c7a] font-noto-sans;
 }

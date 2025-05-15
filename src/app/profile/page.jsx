@@ -5,10 +5,9 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { useSelector, useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { logout as logoutAction, setUser } from '@/store/slices/authSlice';
-import { logout as logoutHelper } from '@/lib/auth';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCamera } from 'react-icons/fa';
@@ -17,8 +16,8 @@ import { updateUserProfile, uploadUserAvatar } from '@/lib/users';
 export default function ProfilePage() {
   const dispatch = useDispatch();
   const router = useRouter();
-  const user = useSelector(state => state.auth.user);
   const { data: session } = useSession();
+  const user = useSelector(state =>  session?.user || state.auth.user );
   const [activeTab, setActiveTab] = useState('profile');
   const [topicsSearchTerm, setTopicsSearchTerm] = useState('');
   const [repliesSearchTerm, setRepliesSearchTerm] = useState('');
@@ -31,20 +30,26 @@ export default function ProfilePage() {
   const [editedUser, setEditedUser] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    website: user?.url || '',
-    bio: user?.description || '',
     image: user?.image || ''
   });
+
+  useEffect(()=> {
+    console.log(user)
+  }, [user])
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     try {
       setIsLoading(true);
-      if (session) {
-        await signOut({ callbackUrl: '/login' });
-      } else {
-        await logoutHelper();
-        dispatch(logoutAction());
-      }
+      await signOut({ callbackUrl: '/login' });
+      dispatch(logoutAction());
       router.push('/login');
     } catch (err) {
       console.error('Logout failed:', err);
@@ -55,19 +60,20 @@ export default function ProfilePage() {
   };
 
   const handleImageChange = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    // show preview immediately
     setSelectedImage(URL.createObjectURL(file));
 
     try {
-      // pass the File directly
-      const response = await uploadUserAvatar(file);
+      if (!session?.wpJwt || !session?.user?.id) {
+        throw new Error('Missing authentication data');
+      }
 
-      if (response.meta?.custom_avatar) {
+      const response = await uploadUserAvatar(file, session.wpJwt, session.user.id);
+
+      if (response?.meta?.custom_avatar) {
         toast.success('Profile image updated successfully');
-        // we know WP stored it, so keep the preview
         setEditedUser({...editedUser, image: URL.createObjectURL(file)});
       }
     } catch (err) {
@@ -83,11 +89,11 @@ export default function ProfilePage() {
       setError(null);
 
       // Validate inputs
-      if (!editedUser.name.trim()) {
+      if (!editedUser.name?.trim()) {
         throw new Error('Name is required');
       }
 
-      if (!editedUser.email.trim()) {
+      if (!editedUser.email?.trim()) {
         throw new Error('Email is required');
       }
 
@@ -99,16 +105,19 @@ export default function ProfilePage() {
         throw new Error('Website URL must start with http:// or https://');
       }
 
-      const userData = {
-        name: editedUser.name,
-        email: editedUser.email,
-        url: editedUser.website,
-        description: editedUser.bio,
-      };
+      if (!session?.wpJwt || !session?.user?.id) {
+        throw new Error('Missing authentication data');
+      }
 
-      const response = await updateUserProfile(userData);
+      const userData = {};
+      if (editedUser.name !== user?.name) userData.name = editedUser.name;
+      if (editedUser.email !== user?.email) userData.email = editedUser.email;
+      if (editedUser.website !== user?.url) userData.url = editedUser.website;
+      if (editedUser.bio !== user?.description) userData.description = editedUser.bio;
+
+      const response = await updateUserProfile(userData, session.wpJwt, session.user.id);
+      console.log('response', response);
       if (response) {
-        // Update Redux store with new user data
         dispatch(setUser({
           ...user,
           name: editedUser.name,
@@ -120,7 +129,7 @@ export default function ProfilePage() {
         toast.success('Profile updated successfully');
         setIsEditing(false);
       } else {
-        throw new Error(response.message || 'Failed to update profile');
+        throw new Error(response?.message || 'Failed to update profile');
       }
 
     } catch (err) {
@@ -132,34 +141,37 @@ export default function ProfilePage() {
     }
   };
 
-  const filteredReplies = user?.latest_replies?.items?.filter(reply =>
-    reply.topic_title.toLowerCase().includes(repliesSearchTerm.toLowerCase())
-  ) || [];
-
-  const filteredTopics = user?.latest_topics?.items?.filter(topic =>
-    topic.title.toLowerCase().includes(topicsSearchTerm.toLowerCase())
-  ) || [];
-
-  const latestActivity = [
-    ...(user?.latest_topics?.items || []).map(item => ({
-      ...item,
-      type: 'topic',
-      date: item.date
-    })),
-    ...(user?.latest_replies?.items || []).map(item => ({
-      ...item, 
-      type: 'reply',
-      date: item.date
-    }))
-  ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
-
   if (!user) {
+    console.log('user', user);
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
+
+  const filteredReplies = user.latest_replies.length > 0 ? user.latest_replies.filter(reply =>
+    reply.topic_title.toLowerCase().includes(repliesSearchTerm.toLowerCase())
+  ) : [];
+
+  const filteredTopics = user.latest_topics.length > 0 ? user.latest_topics.filter(topic =>
+    topic.title.toLowerCase().includes(topicsSearchTerm.toLowerCase())
+  ) : [];
+
+  const latestActivity = [
+    ...(user?.latest_topics?.items || []).map(item => item && ({
+      ...item,
+      type: 'topic',
+      date: item.date
+    })),
+    ...(user?.latest_replies?.items || []).map(item => item && ({
+      ...item, 
+      type: 'reply',
+      date: item.date
+    }))
+  ].filter(Boolean).sort((a, b) => new Date(b?.date || 0) - new Date(a?.date || 0)).slice(0, 5);
+
+
 
   return (
     <ProtectedRoute>
@@ -273,11 +285,11 @@ export default function ProfilePage() {
                         onMouseLeave={() => isEditing && setIsHoveringImage(false)}
                         onClick={() => isEditing && fileInputRef.current?.click()}
                       >
-                        {selectedImage || user.avatar || user.image ? (
+                        {selectedImage || user?.avatar || user?.image ? (
                           <motion.img
                             initial={{ scale: 0.8 }}
                             animate={{ scale: 1 }}
-                            src={selectedImage || user.avatar || user.image}
+                            src={selectedImage || user?.avatar || user?.image}
                             alt="Profile avatar"
                             className="rounded-full w-24 h-24 object-cover"
                             onError={(e) => {
@@ -291,7 +303,7 @@ export default function ProfilePage() {
                             animate={{ scale: 1 }}
                             className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center"
                           >
-                            <span className="text-2xl text-gray-500">{user.name?.[0]?.toUpperCase()}</span>
+                            <span className="text-2xl text-gray-500">{user?.name?.[0]?.toUpperCase()}</span>
                           </motion.div>
                         )}
                         {isEditing && isHoveringImage && (
@@ -366,11 +378,11 @@ export default function ProfilePage() {
                                   setIsEditing(false);
                                   setError(null);
                                   setEditedUser({
-                                    name: user.name || '',
-                                    email: user.email || '',
-                                    website: user.url || '',
-                                    bio: user.description || '',
-                                    image: user.image || ''
+                                    name: user?.name || '',
+                                    email: user?.email || '',
+                                    website: user?.url || '',
+                                    bio: user?.description || '',
+                                    image: user?.image || ''
                                   });
                                   setSelectedImage(null);
                                 }}
@@ -390,23 +402,23 @@ export default function ProfilePage() {
                           >
                             <div className="mt-4">
                               <div className="mt-4">
-                                <Info label="Name" value={user.name || 'Not set'}/>
+                                <Info label="Name" value={user?.name || 'Not set'}/>
                               </div>
                               <div className="mt-4">
-                                <Info label="Email" value={user.email}/>
+                                <Info label="Email" value={user?.email}/>
                               </div>
                               <div className="mt-4">
-                                <Info label="Username" value={user.username}/>
+                                <Info label="Username" value={user?.username}/>
+                              </div>
+                              {/* <div className="mt-4">
+                                <Info label="Member Since" value={user?.registered_date ? new Date(user.registered_date).toLocaleDateString() : 'Not available'}/>
                               </div>
                               <div className="mt-4">
-                                <Info label="Member Since" value={new Date(user.registered_date).toLocaleDateString()}/>
+                                <Info label="Website" value={user?.url || 'Not set'}/>
                               </div>
                               <div className="mt-4">
-                                <Info label="Website" value={user.url || 'Not set'}/>
-                              </div>
-                              <div className="mt-4">
-                                <Info label="Bio" value={user.description || 'No bio provided'}/>
-                              </div>
+                                <Info label="Bio" value={user?.description || 'No bio provided'}/>
+                              </div> */}
                             </div>
                             <motion.button
                               whileHover={{ scale: 1.05 }}
@@ -451,7 +463,7 @@ export default function ProfilePage() {
                             No topics found
                           </motion.p>
                         ) : (
-                          filteredTopics.map((topic, index) => (
+                          filteredTopics.map((topic, index) => topic && (
                             <motion.div
                               key={`topic-${topic.id}`}
                               initial={{ opacity: 0, y: 20 }}
@@ -461,7 +473,7 @@ export default function ProfilePage() {
                             >
                               <Link href={`/topics/${topic.id}`} className="block p-3 bg-gray-50 rounded mb-2 hover:bg-gray-100">
                                 <div className="font-medium">{topic.title}</div>
-                                <div className="text-sm text-gray-500">{new Date(topic.date).toLocaleDateString()}</div>
+                                <div className="text-sm text-gray-500">{topic.date ? new Date(topic.date).toLocaleDateString() : 'Date not available'}</div>
                               </Link>
                             </motion.div>
                           ))
@@ -500,7 +512,7 @@ export default function ProfilePage() {
                             No replies found
                           </motion.p>
                         ) : (
-                          filteredReplies.map((reply, index) => (
+                          filteredReplies.map((reply, index) => reply && (
                             <motion.div
                               key={`reply-${reply.id}`}
                               initial={{ opacity: 0, y: 20 }}
@@ -510,7 +522,7 @@ export default function ProfilePage() {
                             >
                               <Link href={reply.link} className="block p-3 bg-gray-50 rounded mb-2 hover:bg-gray-100">
                                 <div className="font-medium">{reply.topic_title}</div>
-                                <div className="text-sm text-gray-500">{new Date(reply.date).toLocaleDateString()}</div>
+                                <div className="text-sm text-gray-500">{reply.date ? new Date(reply.date).toLocaleDateString() : 'Date not available'}</div>
                               </Link>
                             </motion.div>
                           ))
@@ -540,7 +552,7 @@ export default function ProfilePage() {
                           No recent activity
                         </motion.p>
                       ) : (
-                        latestActivity.map((item, index) => (
+                        latestActivity.map((item, index) => item && (
                           <motion.div
                             key={`activity-${item.id}-${item.type}`}
                             initial={{ opacity: 0, y: 20 }}
@@ -556,7 +568,7 @@ export default function ProfilePage() {
                               <span className="text-sm text-gray-500">{item.type === 'topic' ? 'New Topic' : 'Reply'}</span>
                             </div>
                             <div className="text-sm text-gray-500 mt-1">
-                              {new Date(item.date).toLocaleDateString()}
+                              {item.date ? new Date(item.date).toLocaleDateString() : 'Date not available'}
                             </div>
                           </motion.div>
                         ))

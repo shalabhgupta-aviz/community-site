@@ -1,6 +1,7 @@
 // src/lib/search.js
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const V1_URL = process.env.NEXT_PUBLIC_API_URL_V1
 
 /**
  * Search for topics matching a query
@@ -11,6 +12,16 @@ export async function searchTopics(query) {
   const response = await fetch(`${API_BASE_URL}/search/topics?q=${encodeURIComponent(query)}`);
   if (!response.ok) throw new Error('Failed to search topics');
   return response.json();
+}
+
+export async function allSearch(query){
+  const url = new URL(`${V1_URL}/search`);
+  url.searchParams.set('q', encodeURIComponent(query));
+  url.searchParams.set('per_page', '3');
+
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error('Failed to search list');
+  return res.json();
 }
 
 /**

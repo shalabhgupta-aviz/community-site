@@ -1,5 +1,6 @@
 // ✅ src/lib/api/topics.js
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const V1 = process.env.NEXT_PUBLIC_API_URL_V1
 
 export async function getTopics() {
   const res = await fetch(`${API_BASE_URL}/forum/`);
@@ -47,5 +48,10 @@ export async function deleteTopic(id, token) {
       'Authorization': `Bearer ${token}`,
     },
   });
+  return res.json();
+}
+
+export async function getRecentTopics(perPage = 10) {
+  const res = await fetch(`${V1}/recent-topics?per_page=${perPage}`);
   return res.json();
 }

@@ -28,7 +28,6 @@ const authSlice = createSlice({
       state.token = null;
       removeToken();
     },
-
     // ← NEW:
     setUser(state, action) {
       state.user = action.payload;

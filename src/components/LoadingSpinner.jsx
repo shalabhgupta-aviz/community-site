@@ -4,5 +4,5 @@
 import { Player } from '@lottiefiles/react-lottie-player';
 
 export default function LoadingSpinner() {
-  return <Player autoplay loop src="/animations/loadingSpinner.json" />;
+  return <Player autoplay loop src="/animations/loaderSpinner.json" />;
 }

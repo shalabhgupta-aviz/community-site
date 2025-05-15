@@ -55,3 +55,12 @@ export async function deleteReply(replyId, token) {
   });
   return response.json();
 }
+
+
+// ✅ Get recent replies
+export async function getRecentReplies() {
+  const replies = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/community/v1/recent-replies`
+  ).then(r => r.json());
+  return replies;
+}

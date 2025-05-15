@@ -22,58 +22,28 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
 
   const token = useSelector((state) => state.auth.token);
-  const user = useSelector((state) => state.auth.user);
-  
+  const user = useSelector((state) => state.auth.user || session?.user);
+
   useEffect(() => {
     if (token && user) {
       router.replace('/profile');
     }
-  }, [token, user]);
-  
+  }, [token, user, router]);
+
   useEffect(() => {
-    const token = getToken();
     if (session?.user) {
-      fetch('/api/social-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: session.user.email, name: session.user.name }),
-      })
-        .then((res) => res.json())
-        .then(({ user }) => {
-          if (user) {
-            dispatch(loginSuccess({ user, token: token || 'social' }));
-            router.replace('/profile'); // redirect if needed
-          }
-        });
+      dispatch(loginSuccess({
+        user: {
+          id: session.user.id,
+          name: session.user.name,
+          email: session.user.email,
+          username: session.user.username,
+          avatar: session.user.image
+        },
+        token: session.wpJwt
+      }));
+      router.replace('/profile');
     }
-  }, [session]);
-
-  useEffect(() => {
-    const autoLoginWithSocial = async () => {
-      if (session?.user?.email && session?.user?.name) {
-        try {
-          const res = await fetch('/api/social-login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: session.user.email,
-              username: session.user.name
-            })
-          });
-
-          const data = await res.json();
-          if (data.token && data.user) {
-            dispatch(loginSuccess({ token: data.token, user: data.user }));
-            setToken(data.token);
-            router.replace('/profile');
-          }
-        } catch (err) {
-          console.error('Social login failed', err);
-        }
-      }
-    };
-
-    autoLoginWithSocial();
   }, [session, dispatch, router]);
 
   const handleSubmit = async (e) => {
@@ -228,7 +198,7 @@ export default function LoginPage() {
             <div className="absolute inset-x-0 top-1/2 border-t border-gray-200" />
           </motion.div>
 
-          <motion.button
+          {/* <motion.button
             type="button"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -250,7 +220,7 @@ export default function LoginPage() {
           >
             <img src="/linkedin.svg" alt="LinkedIn" className="h-5 w-5" />
             Continue with LinkedIn
-          </motion.button>
+          </motion.button> */}
         </form>
 
         <motion.div
