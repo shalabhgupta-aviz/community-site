@@ -1,12 +1,9 @@
-// src/app/api/auth/[...nextauth]/route.js
 import NextAuth from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import LinkedInProvider from 'next-auth/providers/linkedin'
 
 const {
   WP_URL,
-  WP_ADMIN_USER,
-  WP_ADMIN_APP_PW,
   NEXTAUTH_SECRET
 } = process.env
 
@@ -24,113 +21,53 @@ export const authOptions = {
   ],
   session: {
     strategy: 'jwt',
-    maxAge:   30 * 24 * 60 * 60,
+    maxAge:   30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async signIn({ user }) {
-      const slug = user.email
-        .replace(/@.+$/, '')         // strip domain
-        .replace(/\W+/g, '-')        // sanitize
-        .toLowerCase()
+    // 🔗 1) on signIn, call your WP social-login endpoint
+    async signIn({ user, account }) {
+      // account.provider === 'google' or 'linkedin'
+      const idToken = account.id_token || account.access_token
+      if (!idToken) return false
 
-      const pw = Math.random().toString(36).slice(-8)
-
-      // First check if user exists
-      const checkRes = await fetch(
-        `${WP_URL}/wp-json/wp/v2/users?slug=${slug}&context=edit`,
-        { headers: { 'Authorization': 'Basic ' + Buffer.from(`${WP_ADMIN_USER}:${WP_ADMIN_APP_PW}`).toString('base64') } }
-      )
-
-      let wpUser
-      if (checkRes.ok) {
-        const existingUsers = await checkRes.json()
-        if (Array.isArray(existingUsers) && existingUsers.length > 0) {
-          // User exists, update their password
-          wpUser = existingUsers[0]
-          await fetch(`${WP_URL}/wp-json/wp/v2/users/${wpUser.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Basic ' + Buffer.from(`${WP_ADMIN_USER}:${WP_ADMIN_APP_PW}`).toString('base64'),
-            },
-            body: JSON.stringify({
-              password: pw
-            })
-          })
-        }
-      }
-
-      if (!wpUser) {
-        // Create new user if doesn't exist
-        await fetch(`${WP_URL}/wp-json/wp/v2/users`, {
+      const res = await fetch(
+        `${WP_URL}/wp-json/community/v1/social-login`,
+        {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Basic ' + Buffer.from(`${WP_ADMIN_USER}:${WP_ADMIN_APP_PW}`).toString('base64'),
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            username: slug,
-            name: user.name,
-            email: user.email,
-            password: pw
+            provider: account.provider,
+            id_token: idToken
           })
-        }).catch(()=>{})
-
-        // Get the newly created user
-        const newUserRes = await fetch(
-          `${WP_URL}/wp-json/wp/v2/users?slug=${slug}&context=edit`,
-          { headers: { 'Authorization': 'Basic ' + Buffer.from(`${WP_ADMIN_USER}:${WP_ADMIN_APP_PW}`).toString('base64') } }
-        )
-
-        if (!newUserRes.ok) {
-          console.error('WP user fetch failed', newUserRes.status)
-          return false
         }
-
-        const newUsers = await newUserRes.json()
-        if (!Array.isArray(newUsers) || newUsers.length === 0) {
-          console.error('No WP user found for slug', slug)
-          return false
-        }
-
-        wpUser = newUsers[0]
+      )
+      if (!res.ok) {
+        console.error('WP social-login failed', await res.text())
+        return false
       }
 
-      // Attach the WP user object onto the NextAuth user
-      user.id = wpUser.id
-      user.slug = wpUser.slug
-      user.wpPassword = pw
-      user.wpMeta = wpUser
+      const { token: wpJwt, user: wpUser } = await res.json()
+
+      // Attach the WP JWT and user data onto the NextAuth user object
+      user.wpJwt  = wpJwt
+      user.wpUser = wpUser
 
       return true
     },
 
-    async jwt({ token, user, account }) {
-      if (user) {
-        token.user = user    // stash WP user payload
+    // 🛡️ 2) in the jwt callback, persist wpJwt/wpUser into the token
+    async jwt({ token, user }) {
+      if (user?.wpJwt) {
+        token.wpJwt  = user.wpJwt
+        token.wpUser = user.wpUser
       }
-      // once only: mint a **user** JWT (not admin) so WP will recognise /me
-      if (token.user && !token.wpJwt) {
-        const { token: wpJwt } = await fetch(
-          `${WP_URL}/wp-json/jwt-auth/v1/token`,
-          {
-            method: 'POST',
-            headers:{ 'Content-Type':'application/json' },
-            body: JSON.stringify({
-              username: token.user.slug,
-              password: token.user.wpPassword
-            })
-          }
-        ).then(r=>r.json())
-        token.wpJwt = wpJwt
-      }
-      console.log(token)
       return token
     },
+
+    // 👀 3) finally, expose them in your client session
     async session({ session, token }) {
-      // expose both for client
-      session.user  = token.user.wpMeta
-      session.wpJwt = token.wpJwt
+      session.wpJwt  = token.wpJwt
+      session.user   = token.wpUser
       return session
     }
   }

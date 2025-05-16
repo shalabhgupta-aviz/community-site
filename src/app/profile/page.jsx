@@ -17,7 +17,8 @@ export default function ProfilePage() {
   const dispatch = useDispatch();
   const router = useRouter();
   const { data: session } = useSession();
-  const user = useSelector(state =>  session?.user || state.auth.user );
+  const reduxUser = useSelector(s => s.auth.user);
+  const user = reduxUser || session?.user;
   const [activeTab, setActiveTab] = useState('profile');
   const [topicsSearchTerm, setTopicsSearchTerm] = useState('');
   const [repliesSearchTerm, setRepliesSearchTerm] = useState('');
@@ -30,12 +31,22 @@ export default function ProfilePage() {
   const [editedUser, setEditedUser] = useState({
     name: user?.name || '',
     email: user?.email || '',
+    website: user?.url || '',
+    bio: user?.description || '',
     image: user?.image || ''
   });
 
-  useEffect(()=> {
-    console.log(user)
-  }, [user])
+  useEffect(() => {
+    if (user) {
+      setEditedUser({
+        name: user.name || '',
+        email: user.email || '',
+        website: user.url || '',
+        bio: user.description || '',
+        image: user.image || ''
+      });
+    }
+  }, [user]);
 
   if (!user) {
     return (
@@ -74,7 +85,8 @@ export default function ProfilePage() {
 
       if (response?.meta?.custom_avatar) {
         toast.success('Profile image updated successfully');
-        setEditedUser({...editedUser, image: URL.createObjectURL(file)});
+        setEditedUser({ ...editedUser, image: URL.createObjectURL(file) });
+        dispatch(setUser({ ...user, image: URL.createObjectURL(file) }));
       }
     } catch (err) {
       console.error('Failed to upload image:', err);
@@ -125,7 +137,7 @@ export default function ProfilePage() {
           url: editedUser.website,
           description: editedUser.bio
         }));
-        
+
         toast.success('Profile updated successfully');
         setIsEditing(false);
       } else {
@@ -140,15 +152,6 @@ export default function ProfilePage() {
       setIsLoading(false);
     }
   };
-
-  if (!user) {
-    console.log('user', user);
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
 
   const filteredReplies = user.latest_replies.length > 0 ? user.latest_replies.filter(reply =>
     reply.topic_title.toLowerCase().includes(repliesSearchTerm.toLowerCase())
@@ -165,17 +168,15 @@ export default function ProfilePage() {
       date: item.date
     })),
     ...(user?.latest_replies?.items || []).map(item => item && ({
-      ...item, 
+      ...item,
       type: 'reply',
       date: item.date
     }))
   ].filter(Boolean).sort((a, b) => new Date(b?.date || 0) - new Date(a?.date || 0)).slice(0, 5);
 
-
-
   return (
     <ProtectedRoute>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
@@ -183,7 +184,7 @@ export default function ProfilePage() {
         className="max-w-6xl mx-auto p-4"
       >
         <div className="flex justify-between items-center mb-6">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="text-3xl font-bold"
@@ -204,7 +205,7 @@ export default function ProfilePage() {
 
         <div className="flex gap-6">
           {/* Left Sidebar */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="w-64 flex-shrink-0"
@@ -245,7 +246,7 @@ export default function ProfilePage() {
           </motion.div>
 
           {/* Main Content */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             className="flex-grow"
@@ -272,14 +273,14 @@ export default function ProfilePage() {
                     className="flex items-start space-x-6"
                   >
                     <div className="flex-shrink-0 relative">
-                      <input 
+                      <input
                         type="file"
                         ref={fileInputRef}
                         onChange={handleImageChange}
                         accept="image/*"
                         className="hidden"
                       />
-                      <div 
+                      <div
                         className={`relative ${isEditing ? 'cursor-pointer' : ''}`}
                         onMouseEnter={() => isEditing && setIsHoveringImage(true)}
                         onMouseLeave={() => isEditing && setIsHoveringImage(false)}
@@ -328,17 +329,17 @@ export default function ProfilePage() {
                               <input
                                 type="text"
                                 value={editedUser.name}
-                                onChange={(e) => setEditedUser({...editedUser, name: e.target.value})}
+                                onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 mb-4 mt-2"
                                 required
                               />
                             </div>
-                            <div className="mt-4"> 
+                            <div className="mt-4">
                               <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
                               <input
                                 type="email"
                                 value={editedUser.email}
-                                onChange={(e) => setEditedUser({...editedUser, email: e.target.value})}
+                                onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 mb-4 mt-2"
                                 required
                               />
@@ -348,7 +349,7 @@ export default function ProfilePage() {
                               <input
                                 type="url"
                                 value={editedUser.website}
-                                onChange={(e) => setEditedUser({...editedUser, website: e.target.value})}
+                                onChange={(e) => setEditedUser({ ...editedUser, website: e.target.value })}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 mb-4 mt-2"
                                 placeholder="https://"
                               />
@@ -357,7 +358,7 @@ export default function ProfilePage() {
                               <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
                               <textarea
                                 value={editedUser.bio}
-                                onChange={(e) => setEditedUser({...editedUser, bio: e.target.value})}
+                                onChange={(e) => setEditedUser({ ...editedUser, bio: e.target.value })}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 mb-4 mt-2"
                                 rows={4}
                                 maxLength={500}
@@ -402,23 +403,23 @@ export default function ProfilePage() {
                           >
                             <div className="mt-4">
                               <div className="mt-4">
-                                <Info label="Name" value={user?.name || 'Not set'}/>
+                                <Info label="Name" value={user?.name || 'Not set'} />
                               </div>
                               <div className="mt-4">
-                                <Info label="Email" value={user?.email}/>
+                                <Info label="Email" value={user?.email} />
                               </div>
                               <div className="mt-4">
-                                <Info label="Username" value={user?.username}/>
-                              </div>
-                              {/* <div className="mt-4">
-                                <Info label="Member Since" value={user?.registered_date ? new Date(user.registered_date).toLocaleDateString() : 'Not available'}/>
+                                <Info label="Username" value={user?.username || user?.slug || 'Not set'} />
                               </div>
                               <div className="mt-4">
-                                <Info label="Website" value={user?.url || 'Not set'}/>
+                                <Info label="Member Since" value={user?.registered_date ? new Date(user.registered_date).toLocaleDateString() : 'Not available'} />
                               </div>
                               <div className="mt-4">
-                                <Info label="Bio" value={user?.description || 'No bio provided'}/>
-                              </div> */}
+                                <Info label="Website" value={user?.url || 'Not set'} />
+                              </div>
+                              <div className="mt-4">
+                                <Info label="Bio" value={user?.description || 'No bio provided'} />
+                              </div>
                             </div>
                             <motion.button
                               whileHover={{ scale: 1.05 }}
@@ -448,7 +449,7 @@ export default function ProfilePage() {
                       onChange={(e) => setTopicsSearchTerm(e.target.value)}
                       className="w-full p-2 border rounded-md mb-6"
                     />
-                    
+
                     <div>
                       <h3 className="text-lg font-semibold mb-4">My Topics</h3>
                       <AnimatePresence mode="wait">
@@ -497,7 +498,7 @@ export default function ProfilePage() {
                       onChange={(e) => setRepliesSearchTerm(e.target.value)}
                       className="w-full p-2 border rounded-md mb-6"
                     />
-                    
+
                     <div>
                       <h3 className="text-lg font-semibold mb-4">My Replies</h3>
                       <AnimatePresence mode="wait">

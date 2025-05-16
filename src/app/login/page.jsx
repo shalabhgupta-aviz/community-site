@@ -1,9 +1,18 @@
+// src/app/login/page.jsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginStart, loginSuccess, loginFailure } from '@/store/slices/authSlice';
-import { getToken, loginUser, register, setToken } from '@/lib/auth';
+import {
+  loginStart,
+  loginSuccess,
+  loginFailure
+} from '@/store/slices/authSlice';
+import {
+  loginUser,
+  register as registerUser,
+  setToken,
+} from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,68 +20,70 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function LoginPage() {
   const dispatch = useDispatch();
-  const router = useRouter();
-  const auth = useSelector((state) => state.auth);
-  const { loading, error } = auth;
+  const router   = useRouter();
+  const { loading, error } = useSelector(s => s.auth);
+  const token    = useSelector(s => s.auth.token);
+  const user     = useSelector(s => s.auth.user);
   const { data: session, status } = useSession();
 
   const [isRegister, setIsRegister] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email,    setEmail]    = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const token = useSelector((state) => state.auth.token);
-  const user = useSelector((state) => state.auth.user || session?.user);
-
+  // 1️⃣ Already have a JWT + user in Redux? go straight to profile
   useEffect(() => {
     if (token && user) {
       router.replace('/profile');
     }
   }, [token, user, router]);
 
+  // 2️⃣ NextAuth just finished social login?
   useEffect(() => {
-    if (session?.user) {
+    if (session?.wpJwt && session.user) {
+      // populate Redux & our cookie
       dispatch(loginSuccess({
-        user: {
-          id: session.user.id,
-          name: session.user.name,
-          email: session.user.email,
-          username: session.user.username,
-          avatar: session.user.image
-        },
-        token: session.wpJwt
+        token: session.wpJwt,
+        user:  {
+          id:       session.user.id,
+          name:     session.user.name,
+          email:    session.user.email,
+          username: session.user.slug,
+          avatar:   session.user.avatar_urls?.['96'] ?? session.user.avatar,
+        }
       }));
+      setToken(session.wpJwt);
       router.replace('/profile');
     }
   }, [session, dispatch, router]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     dispatch(loginStart());
 
     try {
+      let data;
       if (isRegister) {
-        await register(username, email, password);
-        const data = await loginUser(email, password);
-        if (data.token) {
-          dispatch(loginSuccess({ user: data.user, token: data.token }));
-          setToken(data.token);
-        }
+        // create WP user via your REST register endpoint
+        await registerUser(username, email, password);
+        data = await loginUser(email, password);
       } else {
-        const data = await loginUser(email, password);
-
-        if (data.token) {
-          dispatch(loginSuccess({ user: data.user, token: data.token }));
-          setToken(data.token);
-        }
+        data = await loginUser(email, password);
       }
-      router.push('/profile');
+
+      dispatch(loginSuccess({
+        user:  data.user,
+        token: data.token
+      }));
+      setToken(data.token);
+      router.replace('/profile');
     } catch (err) {
       dispatch(loginFailure(err.message));
     }
   };
 
-  if (loading) {
+  // while NextAuth is bootstrapping or our own JWT call in progress
+  if (status === 'loading' || loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <LoadingSpinner />
@@ -81,80 +92,59 @@ export default function LoginPage() {
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen flex items-center justify-center px-4"
+      className="min-h-screen flex items-center justify-center p-4"
     >
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
         className="bg-white w-full max-w-md p-6 rounded-lg shadow-lg"
       >
-        <motion.h1 
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="text-2xl font-semibold mb-6 text-center"
-        >
-          {isRegister ? 'Create your account' : 'Make the most of your professional life'}
-        </motion.h1>
+        <h1 className="text-2xl font-semibold mb-6 text-center">
+          {isRegister ? 'Create your account' : 'Sign in to your account'}
+        </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {isRegister && (
-            <motion.div
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              <label className="block text-sm font-medium text-gray-700">Username</label>
+            <div>
+              <label className="block text-sm font-medium">Username</label>
               <input
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                onChange={e => setUsername(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md"
                 required
               />
-            </motion.div>
+            </div>
           )}
-
-          <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+          <div>
+            <label className="block text-sm font-medium">Email</label>
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              onChange={e => setEmail(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md"
               required
             />
-          </motion.div>
-
-          <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.6 }}
-          >
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Password</label>
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              onChange={e => setPassword(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md"
               required
             />
-          </motion.div>
+          </div>
 
           <AnimatePresence>
             {error && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="text-red-600 text-sm"
               >
@@ -163,88 +153,48 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="text-xs text-gray-500"
-          >
-            By clicking {isRegister ? 'Create account' : 'Sign in'}, you agree to our{' '}
-            <a href="#" className="text-blue-600 underline">Terms</a>,{' '}
-            <a href="#" className="text-blue-600 underline">Privacy Policy</a>, and{' '}
-            <a href="#" className="text-blue-600 underline">Cookie Policy</a>.
-          </motion.div>
-
-          <motion.button
+          <button
             type="submit"
             disabled={loading}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
           >
-            {loading ? (
-              <LoadingSpinner />
-            ) : isRegister ? 'Agree & Join' : 'Sign in'}
-          </motion.button>
+            {isRegister ? 'Agree & Join' : 'Sign in'}
+          </button>
+        </form>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.9 }}
-            className="relative py-2 text-center text-sm text-gray-400"
-          >
-            <span className="bg-white px-2">or</span>
-            <div className="absolute inset-x-0 top-1/2 border-t border-gray-200" />
-          </motion.div>
+        <div className="relative my-4 text-center">
+          <span className="px-2 bg-white text-gray-400">or</span>
+          <div className="absolute inset-x-0 top-1/2 border-t border-gray-200" />
+        </div>
 
-          {/* <motion.button
-            type="button"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
+        <div className="space-y-3">
+          <button
+            onClick={() => signIn('google',   { callbackUrl: '/profile' })}
             className="w-full flex items-center justify-center gap-3 py-2 border rounded-md hover:bg-gray-50"
-            onClick={() => signIn('google', { callbackUrl: '/login' })}
           >
-            <img src='/google.svg' alt="Google" className="h-5 w-5" />
+            <img src="/google.svg" alt="Google" className="h-5 w-5" />
             Continue with Google
-          </motion.button>
-
-          <motion.button
-            type="button"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.1 }}
+          </button>
+          <button
+            onClick={() => signIn('linkedin',{ callbackUrl: '/profile' })}
             className="w-full flex items-center justify-center gap-3 py-2 border rounded-md hover:bg-gray-50"
-            onClick={() => signIn('linkedin', { callbackUrl: '/login' })}
           >
             <img src="/linkedin.svg" alt="LinkedIn" className="h-5 w-5" />
             Continue with LinkedIn
-          </motion.button> */}
-        </form>
+          </button>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-          className="mt-6 text-center text-sm"
-        >
-          {isRegister ? (
-            <>
-              Already have an account?{' '}
-              <button onClick={() => setIsRegister(false)} className="text-blue-600 underline">
-                Sign in
-              </button>
-            </>
-          ) : (
-            <>
-              New to the community?{' '}
-              <button onClick={() => setIsRegister(true)} className="text-blue-600 underline">
-                Create one
-              </button>
-            </>
-          )}
-        </motion.div>
+        <p className="mt-6 text-center text-sm text-gray-600">
+          {isRegister
+            ? 'Already have an account?'
+            : 'New to our community?'}{' '}
+          <button
+            onClick={() => setIsRegister(x => !x)}
+            className="text-blue-600 underline"
+          >
+            {isRegister ? 'Sign in' : 'Create one'}
+          </button>
+        </p>
       </motion.div>
     </motion.div>
   );

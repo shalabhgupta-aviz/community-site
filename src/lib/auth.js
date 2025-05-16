@@ -82,3 +82,18 @@ export async function updateUserProfile(userId, data, token) {
   });
   return res.json();
 }
+
+
+// src/lib/auth.js
+export async function socialLogin(provider, idToken) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/community/v1/social-login`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, id_token: idToken })
+    }
+  );
+  if (!res.ok) throw new Error('Social login failed');
+  return res.json(); // => { token: '…', user: { … } }
+}

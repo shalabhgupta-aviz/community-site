@@ -44,7 +44,10 @@ export async function updateUserProfile(userData, token, userId) {
     throw new Error(error.message || 'Failed to update profile');
   }
 
-  return res.json();
+  const data = await res.json();
+  console.log('res', data);
+
+  return data;
 }
 
 export async function uploadUserAvatar(file, token, userId) {
