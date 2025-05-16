@@ -3,13 +3,12 @@ import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
 
 const fetcher = async (url, token) => {
-  const response = await fetch(url, {
+  const response = await fetcher(url, {
     headers: {
       'Authorization': `Bearer ${token}`
     }
   });
-  if (!response.ok) throw new Error('Failed to fetch notifications');
-  return response.json();
+  return response;
 };
 
 export function useNotifications() {
@@ -25,6 +24,6 @@ export function useNotifications() {
   return {
     notifications: data || [],
     loading: !error && !data,
-    error
+    error: error || null
   };
 }

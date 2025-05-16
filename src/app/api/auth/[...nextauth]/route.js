@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import LinkedInProvider from 'next-auth/providers/linkedin'
+import { fetcher } from '@/lib/fetcher'
 
 const {
   WP_URL,
@@ -30,7 +31,7 @@ export const authOptions = {
       const idToken = account.id_token || account.access_token
       if (!idToken) return false
 
-      const res = await fetch(
+      const res = await fetcher(
         `${WP_URL}/wp-json/community/v1/social-login`,
         {
           method: 'POST',
@@ -41,12 +42,12 @@ export const authOptions = {
           })
         }
       )
-      if (!res.ok) {
-        console.error('WP social-login failed', await res.text())
+      if (res.error) {
+        console.error('WP social-login failed', res.error)
         return false
       }
 
-      const { token: wpJwt, user: wpUser } = await res.json()
+      const { token: wpJwt, user: wpUser } = res
 
       // Attach the WP JWT and user data onto the NextAuth user object
       user.wpJwt  = wpJwt

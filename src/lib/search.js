@@ -1,5 +1,7 @@
 // src/lib/search.js
 
+import { fetcher } from "./fetcher";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const V1_URL = process.env.NEXT_PUBLIC_API_URL_V1
 
@@ -9,7 +11,7 @@ const V1_URL = process.env.NEXT_PUBLIC_API_URL_V1
  * @returns {Promise<Array>} - List of matching topics
  */
 export async function searchTopics(query) {
-  const response = await fetch(`${API_BASE_URL}/search/topics?q=${encodeURIComponent(query)}`);
+  const response = await fetcher(`${API_BASE_URL}/search/topics?q=${encodeURIComponent(query)}`);
   if (!response.ok) throw new Error('Failed to search topics');
   return response.json();
 }
@@ -19,7 +21,7 @@ export async function allSearch(query){
   url.searchParams.set('q', encodeURIComponent(query));
   url.searchParams.set('per_page', '3');
 
-  const res = await fetch(url.toString());
+  const res = await fetcher(url.toString());
   if (!res.ok) throw new Error('Failed to search list');
   return res.json();
 }
@@ -30,7 +32,7 @@ export async function allSearch(query){
  * @returns {Promise<Array>} - List of matching users
  */
 export async function searchUsers(query) {
-  const response = await fetch(`${API_BASE_URL}/search/users?q=${encodeURIComponent(query)}`);
+  const response = await fetcher(`${API_BASE_URL}/search/users?q=${encodeURIComponent(query)}`);
   if (!response.ok) throw new Error('Failed to search users');
   return response.json();
 }

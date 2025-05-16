@@ -2,7 +2,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL; // e.g. https://dev.community.aviznetworks.com/wp-json/wp/v2
 
 export async function getUserByUsername(slug, topicPage = 1, replyPage = 1) {
-    const res = await fetch(
+    const res = await fetcher(
       `${API_BASE_URL}/users?slug=${slug}` +
       `&topic_page=${topicPage}&reply_page=${replyPage}`
     )
@@ -11,14 +11,14 @@ export async function getUserByUsername(slug, topicPage = 1, replyPage = 1) {
 }
 
 export async function getTopicsByUser(userId, page = 1, perPage = 10) {
-  const res = await fetch(
+  const res = await fetcher(
     `${API_BASE_URL}/topic?author=${userId}&per_page=${perPage}&page=${page}`
   )
   return { items: await res.json(), totalPages: parseInt(res.headers.get('x-wp-totalpages')||'1') }
 }
 
 export async function getRepliesByUser(userId, page = 1, perPage = 10) {
-  const res = await fetch(
+  const res = await fetcher(
     `${API_BASE_URL}/reply?username=${userId}&per_page=${perPage}&page=${page}`
   )
   return { items: await res.json(), totalPages: parseInt(res.headers.get('x-wp-totalpages')||'1') }
@@ -32,7 +32,7 @@ export async function updateUserProfile(userData, token, userId) {
 
   console.log(token);
   console.log(userData);
-  const res = await fetch(`${API_BASE_URL}/users/${userId}?context=edit`, {
+  const res = await fetcher(`${API_BASE_URL}/users/${userId}?context=edit`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -58,7 +58,7 @@ export async function uploadUserAvatar(file, token, userId) {
   // 1) Upload the file to /media
   const form = new FormData();
   form.append('file', file);
-  const mediaRes = await fetch(`${API_BASE_URL}/media`, {
+  const mediaRes = await fetcher(`${API_BASE_URL}/media`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: form,
@@ -67,7 +67,7 @@ export async function uploadUserAvatar(file, token, userId) {
   const media = await mediaRes.json();
 
   // 2) Tell WP this is your new avatar by storing the attachment ID
-  const userRes = await fetch(`${API_BASE_URL}/users/${userId}?context=edit`, {
+  const userRes = await fetcher(`${API_BASE_URL}/users/${userId}?context=edit`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

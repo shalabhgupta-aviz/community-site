@@ -65,7 +65,6 @@ export default function Header() {
           <li>
             <Link href="/" className="hover:text-indigo-600 transition">
               Home
-              {console.log("error")}
             </Link>
           </li>
           <li>

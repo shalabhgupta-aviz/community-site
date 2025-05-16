@@ -77,7 +77,7 @@ function ReduxSessionSync({ children }) {
     );
   }
 
-  return <AnimatePresence mode="wait">{React.Children.map(children, (child, index) => (
+  return <AnimatePresence>{React.Children.map(children, (child, index) => (
     <motion.div key={index}>
       {child}
     </motion.div>

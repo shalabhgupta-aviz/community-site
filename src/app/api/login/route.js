@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
+import { fetcher } from '@/lib/fetcher';
 
 const NEXT_PUBLIC_JWT_AUTH_URL = process.env.NEXT_PUBLIC_JWT_AUTH_URL;
 
 export async function POST(req) {
   const { username, password } = await req.json();
 
-  const res = await fetch(`${NEXT_PUBLIC_JWT_AUTH_URL}/jwt-auth/v1/token`, {
+  const res = await fetcher(`${NEXT_PUBLIC_JWT_AUTH_URL}/jwt-auth/v1/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })

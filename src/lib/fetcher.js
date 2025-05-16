@@ -5,11 +5,11 @@ export async function fetcher(url, options = {}) {
       const error = new Error('An error occurred while fetching the data.');
       error.info = await response.json();
       error.status = response.status;
-      throw error;
+      return { error: error.message, status: error.status };
     }
     return await response.json();
   } catch (error) {
     console.error('Fetch error:', error);
-    throw new Error(error.message || 'An unexpected error occurred.');
+    return { error: error.message || 'An unexpected error occurred.', status: 500 };
   }
 } 
