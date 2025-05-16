@@ -1,74 +1,85 @@
-// src/components/ClientProvider.jsx
 'use client';
 
-import { Provider, useSelector, useDispatch } from 'react-redux';
-import store from '@/store';
+import { Provider } from 'react-redux';
+// Import store and persistor as named exports
+import { store, persistor } from '@/store';
+import { PersistGate } from 'redux-persist/integration/react';
 import { SessionProvider, useSession } from 'next-auth/react';
-import { getToken, setToken } from '@/lib/auth';
-import { loginSuccess, setUser } from '@/store/slices/authSlice';
-import { getUserProfile } from '@/lib/auth';
-import { useEffect, useState } from 'react';
+import { loginSuccess } from '@/store/slices/authSlice';
+import { getUserProfile, setToken, getToken } from '@/lib/auth';
+import React, { useEffect, useState } from 'react';
 import loadingSpinner from '/public/animations/loaderSpinner.json';
 import Lottie from 'lottie-react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export default function ClientProvider({ children }) {
   return (
-    <SessionProvider>
-      <Provider store={store}>
-        <ReduxSessionSync>
-          {children}
-          <SpeedInsights />
-        </ReduxSessionSync>
-      </Provider>
-    </SessionProvider>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <SessionProvider>
+          <ReduxSessionSync>
+            {children}
+            <SpeedInsights />
+          </ReduxSessionSync>
+        </SessionProvider>
+      </PersistGate>
+    </Provider>
   );
 }
 
 function ReduxSessionSync({ children }) {
   const { data: session, status } = useSession();
-  const reduxUser = useSelector(state => state.auth.user);
-  const dispatch  = useDispatch();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    async function sync() {
-      try {
-        let fetchedUser = null;
-        if (session?.wpJwt) {
-          setToken(session.wpJwt);
-          fetchedUser = await getUserProfile(session.wpJwt);
-        } else {
-          const token = getToken();
-          if (token) fetchedUser = await getUserProfile(token);
+    if (status !== 'authenticated' && status !== 'unauthenticated') return;
+
+    (async () => {
+      let token;
+      let user;
+
+      if (session?.wpJwt) {
+        token = session.wpJwt;
+        setToken(token);
+        user = await getUserProfile(token);
+      } else {
+        token = getToken();
+        if (token) {
+          user = await getUserProfile(token);
         }
-        if (fetchedUser) {
-          // merge without overwriting local changes
-          const mergedUser = { ...fetchedUser, ...reduxUser };
-          if (JSON.stringify(mergedUser) !== JSON.stringify(reduxUser)) {
-            dispatch(loginSuccess({ token: session?.wpJwt || getToken(), user: mergedUser }));
-          }
-        }
-      } catch (err) {
-        console.error('Failed to sync session:', err);
-        toast.error('Failed to sync user session.');
-      } finally {
-        setReady(true);
       }
-    }
-    if (status !== 'loading') sync();
-  }, [session, status, reduxUser, dispatch]);
+
+      if (user && token) {
+        // loginSuccess sets both token & user in Redux
+        store.dispatch(loginSuccess({ token, user }));
+      }
+
+      setReady(true);
+    })().catch((err) => {
+      console.error('Session sync failed:', err);
+      toast.error('Could not restore session');
+      setReady(true);
+    });
+  }, [session, status]);
 
   if (!ready || status === 'loading') {
     return (
-      <motion.div className="flex justify-center items-center min-h-screen">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="flex justify-center items-center min-h-screen"
+      >
         <Lottie animationData={loadingSpinner} loop style={{ width: 200, height: 200 }} />
       </motion.div>
     );
   }
 
-  // Render children directly—no AnimatePresence wrapper
-  return <>{children}</>;
+  return <AnimatePresence mode="wait">{React.Children.map(children, (child, index) => (
+    <motion.div key={index}>
+      {child}
+    </motion.div>
+  ))}</AnimatePresence>;
 }

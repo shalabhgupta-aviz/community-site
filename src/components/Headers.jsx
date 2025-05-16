@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useSelector } from 'react-redux';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiBell } from 'react-icons/fi';
@@ -37,6 +37,14 @@ export default function Header() {
 
   const handleNotificationClick = () => {
     setShowNotifications(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut({ callbackUrl: '/login' });
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
   };
 
   return (
@@ -172,6 +180,15 @@ export default function Header() {
                     >
                       Profile
                     </Link>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        handleLogout();
+                      }}
+                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    >
+                      Logout
+                    </button>
                   </div>
                 )}
               </motion.div>

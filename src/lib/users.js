@@ -29,6 +29,7 @@ export async function updateUserProfile(userData, token, userId) {
   // const token = document.cookie.split('; ')
   //   .find(row => row.startsWith('token='))
   //   ?.split('=')[1];
+
   console.log(token);
   console.log(userData);
   const res = await fetch(`${API_BASE_URL}/users/${userId}?context=edit`, {

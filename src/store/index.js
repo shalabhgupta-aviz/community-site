@@ -1,23 +1,40 @@
-import { configureStore } from '@reduxjs/toolkit';
-import authReducer from './slices/authSlice';
-import uiReducer from './slices/uiSlice';
-import notificationReducer from './slices/notificationSlice';
-import badgeReducer from './slices/badgeSlice';
-import profileReducer from './slices/profileSlice';
-import {wpApi} from './api/wpApi';
-import loggerMiddleware from '../middleware/loggerMiddleware';
+// src/store/index.js
+import { configureStore, combineReducers } from '@reduxjs/toolkit'
+import {
+  persistReducer,
+  persistStore,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from 'redux-persist'
+import storage from 'redux-persist/lib/storage'
+import authReducer from './slices/authSlice'
+import { wpApi } from './api/wpApi'    // ← your RTK Query api
 
-const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    ui: uiReducer,
-    notifications: notificationReducer,
-    badges: badgeReducer,
-    profile: profileReducer,
-    [wpApi.reducerPath]: wpApi.reducer
-  },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(wpApi.middleware, loggerMiddleware),
-});
+const persistConfig = {
+  key: 'root',
+  storage,
+  whitelist: ['auth'],               // only persist auth slice
+}
 
-export default store;
+const rootReducer = combineReducers({
+  auth: authReducer,
+  [wpApi.reducerPath]: wpApi.reducer, // ← add the api reducer here
+})
+
+const persistedReducer = persistReducer(persistConfig, rootReducer)
+
+export const store = configureStore({
+  reducer: persistedReducer,
+  middleware: getDefaultMiddleware =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }).concat(wpApi.middleware),      // ← add the api middleware here
+})
+
+export const persistor = persistStore(store)

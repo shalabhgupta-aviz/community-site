@@ -1,4 +1,3 @@
-// src/app/profile/page.jsx
 'use client';
 
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -11,29 +10,44 @@ import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCamera } from 'react-icons/fa';
-import { updateUserProfile, uploadUserAvatar } from '@/lib/users';
+import { uploadUserAvatar } from '@/lib/users';
+import { useGetCurrentUserQuery, useUpdateUserMutation } from '@/store/api/wpApi';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
   const router = useRouter();
   const { data: session } = useSession();
-  const reduxUser = useSelector(s => s.auth.user);
-  const user = reduxUser || session?.user;
+
+  // Fetch current user via RTK Query
+  const {
+    data: user,
+    isLoading: isUserLoading, // Represents the loading state of fetching the current user
+    error: queryError, // Represents any error that occurs while fetching the current user
+  } = useGetCurrentUserQuery();
+
+  // Mutation hook for updating user profile
+  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation(); // isUpdating represents the loading state of the update operation
+
+  // Local loading state for logout
+  const [logoutLoading, setLogoutLoading] = useState(false);
+
+  // Local form error state (if needed later)
+  const [formError, setFormError] = useState(null);
+
   const [activeTab, setActiveTab] = useState('profile');
   const [topicsSearchTerm, setTopicsSearchTerm] = useState('');
   const [repliesSearchTerm, setRepliesSearchTerm] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
   const fileInputRef = useRef(null);
   const [selectedImage, setSelectedImage] = useState(null);
+
   const [editedUser, setEditedUser] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    website: user?.url || '',
-    bio: user?.description || '',
-    image: user?.image || ''
+    name: '',
+    email: '',
+    website: '',
+    bio: '',
+    image: '',
   });
 
   useEffect(() => {
@@ -43,12 +57,13 @@ export default function ProfilePage() {
         email: user.email || '',
         website: user.url || '',
         bio: user.description || '',
-        image: user.image || ''
+        image: user.image || '',
       });
     }
   }, [user]);
 
-  if (!user) {
+  // Show spinner until user data is loaded
+  if (isUserLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -56,9 +71,23 @@ export default function ProfilePage() {
     );
   }
 
+  console.log('queryError', queryError);
+  if (queryError) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        className="text-center text-red-600"
+      >
+        Error loading profile.
+      </motion.div>
+    );
+  }
+
   const handleLogout = async () => {
     try {
-      setIsLoading(true);
+      setLogoutLoading(true);
       await signOut({ callbackUrl: '/login' });
       dispatch(logoutAction());
       router.push('/login');
@@ -66,7 +95,7 @@ export default function ProfilePage() {
       console.error('Logout failed:', err);
       toast.error('Failed to logout. Please try again.');
     } finally {
-      setIsLoading(false);
+      setLogoutLoading(false);
     }
   };
 
@@ -85,7 +114,7 @@ export default function ProfilePage() {
 
       if (response?.meta?.custom_avatar) {
         toast.success('Profile image updated successfully');
-        setEditedUser({ ...editedUser, image: URL.createObjectURL(file) });
+        setEditedUser((prev) => ({ ...prev, image: URL.createObjectURL(file) }));
         dispatch(setUser({ ...user, image: URL.createObjectURL(file) }));
       }
     } catch (err) {
@@ -97,65 +126,51 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async () => {
     try {
-      setIsLoading(true);
-      setError(null);
+      setFormError(null);
 
       // Validate inputs
-      if (!editedUser.name?.trim()) {
+      if (!editedUser.name.trim()) {
         throw new Error('Name is required');
       }
 
-      if (!editedUser.email?.trim()) {
+      if (!editedUser.email.trim()) {
         throw new Error('Email is required');
-      }
-
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editedUser.email)) {
-        throw new Error('Invalid email format');
       }
 
       if (editedUser.website && !/^https?:\/\/.+/.test(editedUser.website)) {
         throw new Error('Website URL must start with http:// or https://');
       }
-
+      console.log('session', session);
       if (!session?.wpJwt || !session?.user?.id) {
         throw new Error('Missing authentication data');
       }
 
-      const userData = {};
-      if (editedUser.name !== user?.name) userData.name = editedUser.name;
-      if (editedUser.website !== user?.url) userData.url = editedUser.website;
-      if (editedUser.bio !== user?.description) userData.description = editedUser.bio;
+      // Build a minimal data object of changed fields
+      const data = {};
+      if (editedUser.name !== user.name) data.name = editedUser.name;
+      if (editedUser.website !== user.url) data.url = editedUser.website;
+      if (editedUser.bio !== user.description) data.description = editedUser.bio;
 
-      const response = await updateUserProfile(userData, session.wpJwt, session.user.id);
-      console.log('response', response);
-      if (response) {
-        dispatch(setUser({
-          ...user,
-          name: editedUser.name,
-          url: editedUser.website,
-          description: editedUser.bio
-        }));
+      // Call updateUser mutation and unwrap the response to handle errors
+      const updatedResponse = await updateUser({ id: session?.user?.id, data }).unwrap();
 
-        toast.success('Profile updated successfully');
-        setIsEditing(false);
-      } else {
-        throw new Error(response?.message || 'Failed to update profile');
-      }
+      // Dispatch setUser to sync Redux with the updated user data
+      dispatch(setUser(updatedResponse));
 
+      toast.success('Profile updated successfully');
+      setIsEditing(false);
     } catch (err) {
       console.error('Failed to save profile:', err);
-      setError(err.message || 'Failed to save profile. Please try again.');
+      setFormError(err.message || 'Failed to save profile. Please try again.');
       toast.error(err.message || 'Failed to save profile');
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const filteredReplies = user.latest_replies.length > 0 ? user.latest_replies.filter(reply =>
+  const filteredReplies = user?.latest_replies?.items?.length > 0 ? user?.latest_replies?.items?.filter(reply =>
     reply.topic_title.toLowerCase().includes(repliesSearchTerm.toLowerCase())
   ) : [];
 
-  const filteredTopics = user.latest_topics.length > 0 ? user.latest_topics.filter(topic =>
+  const filteredTopics = user?.latest_topics?.items?.length > 0 ? user?.latest_topics?.items?.filter(topic =>
     topic.title.toLowerCase().includes(topicsSearchTerm.toLowerCase())
   ) : [];
 
@@ -194,10 +209,10 @@ export default function ProfilePage() {
             animate={{ opacity: 1, x: 0 }}
             whileHover={{ scale: 1.05 }}
             onClick={handleLogout}
-            disabled={isLoading}
-            className={`px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={logoutLoading}
+            className={`px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition ${logoutLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isLoading ? 'Logging out...' : 'Logout'}
+            {logoutLoading ? 'Logging out...' : 'Logout'}
           </motion.button>
         </div>
 
@@ -251,14 +266,15 @@ export default function ProfilePage() {
           >
             <div className="bg-white p-6 rounded-lg shadow-sm border">
               <AnimatePresence mode="wait">
-                {error && (
+                {formError && (
                   <motion.div
+                    key="error-card"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-600"
                   >
-                    {error}
+                    {formError}
                   </motion.div>
                 )}
 
@@ -365,16 +381,16 @@ export default function ProfilePage() {
                               <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 onClick={handleSaveProfile}
-                                disabled={isLoading}
-                                className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mt-4 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={isUpdating}
+                                className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mt-4 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
                               >
-                                {isLoading ? 'Saving...' : 'Save Changes'}
+                                {isUpdating ? 'Saving...' : 'Save Changes'}
                               </motion.button>
                               <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 onClick={() => {
                                   setIsEditing(false);
-                                  setError(null);
+                                  setFormError(null);
                                   setEditedUser({
                                     name: user?.name || '',
                                     email: user?.email || '',
@@ -384,7 +400,7 @@ export default function ProfilePage() {
                                   });
                                   setSelectedImage(null);
                                 }}
-                                disabled={isLoading}
+                                disabled={isUpdating}
                                 className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 mt-4"
                               >
                                 Cancel
