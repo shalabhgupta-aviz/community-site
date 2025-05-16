@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,6 +9,8 @@ import { decodeHtml } from '@/plugins/decodeHTMLentities';
 import { useSearchParams, usePathname } from 'next/navigation';
 import SimpleRichTextEditor from '@/plugins/SimpleRichTextEditor';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import Breadcrumb from '@/components/Breadcrumb';
+import ReplyCardWithImage from '@/components/ReplyCardwithImage';
 import './page.css';
 
 export default function QuestionPage({ params }) {
@@ -56,14 +57,6 @@ export default function QuestionPage({ params }) {
   const handleSubmitReply = async (e) => {
     e.preventDefault();
     
-    // if (!replyContent || replyContent.trim() === '') {
-    //   setError('Reply content cannot be empty');
-    //   return;
-    // }
-
-    // setIsSubmitting(true);
-    // setError(null);
-
     console.log('replyContent', replyContent);
 
     const token = document.cookie
@@ -77,22 +70,17 @@ export default function QuestionPage({ params }) {
       return;
     }
 
-    // try {
-    //   const newReply = await createReply(id, replyContent, token);
-      
-    //   if (newReply) {
-    //     // Refresh the question and replies
-    //     const updatedQuestion = await getQuestionDetails(id);
-    //     setQuestion(updatedQuestion);
-    //     setReplies(updatedQuestion.latest_replies);
-    //     setReplyContent('');
-    //   }
-    // } catch (err) {
-    //   console.error('Failed to submit reply:', err);
-    //   setError('Failed to submit reply. Please try again.');
-    // } finally {
-    //   setIsSubmitting(false);
-    // }
+    setIsSubmitting(true);
+    try {
+      const newReply = await createReply(id, replyContent, token);
+      setReplies([...replies, newReply]);
+      setReplyContent('');
+    } catch (err) {
+      setError('Failed to submit reply');
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -114,39 +102,7 @@ export default function QuestionPage({ params }) {
   return (
     <div className="max-w-[80%] mx-auto p-4 mt-8">
       {/* Breadcrumb navigation */}
-      <nav className="flex mb-4 text-sm" aria-label="Breadcrumb">
-        <ol className="inline-flex items-center space-x-1 md:space-x-3">
-          <li className="inline-flex items-center">
-            <Link href="/" className="text-gray-600 hover:text-blue-600">
-              Home
-            </Link>
-          </li>
-          {paths.map((path, index) => {
-            const href = index === paths.length - 1 
-              ? '#' 
-              : `/${paths.slice(0, index + 1).join('/')}`;
-            
-            const displayPath = path === '[id]' && question 
-              ? decodeHtml(question.title?.rendered) 
-              : path.charAt(0).toUpperCase() + path.slice(1);
-            
-            return (
-              <li key={index}>
-                <div className="flex items-center">
-                  <span className="mx-2 text-gray-400">/</span>
-                  {index === paths.length - 1 ? (
-                    <span className="text-blue-600">{displayPath}</span>
-                  ) : (
-                    <Link href={href} className="text-gray-600 hover:text-blue-600">
-                      {displayPath}
-                    </Link>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
+      <Breadcrumb paths={paths} question={question} />
 
       <h1 className="text-4xl font-bold mb-6">{decodeHtml(question.title?.rendered)}</h1>
 
@@ -182,36 +138,17 @@ export default function QuestionPage({ params }) {
           ) : (
             <div className="reply-thread">
               {replies.map((reply, index) => (
-                <div key={reply.id} className="flex mb-4">
-                  {console.log(reply)}
-                  <div className="reply-avatar-container mr-4">
-                    <img 
-                      src={reply.author?.avatar || "https://via.placeholder.com/40"} 
-                      alt={reply.author?.name || "User"} 
-                      className="w-10 h-10 rounded-full"
-                    />
-                    {index !== replies.length - 1 && (
-                      <div className="thread-line h-full w-0.5 bg-gray-300 mx-auto mt-2"></div>
-                    )}
-                  </div>
-                  <div className="flex-1 bg-white p-4 rounded-lg shadow-sm">
-                    <div className="font-medium text-gray-800 mb-1">
-                      {reply.author?.name || "Anonymous User"}
-                    </div>
-                    <div
-                      className="text-gray-600 mb-3"
-                      dangerouslySetInnerHTML={{ __html: decodeHtml(reply.content?.rendered) }}
-                    />
-                    <div className="text-xs text-gray-500">
-                      {new Date(reply.date).toLocaleDateString()} at {new Date(reply.date).toLocaleTimeString()}
-                    </div>
-                  </div>
-                </div>
+                <ReplyCardWithImage 
+                  key={reply.id} 
+                  reply={reply} 
+                  index={index} 
+                  totalReplies={replies.length} 
+                />
               ))}
             </div>
           )}
 
-          <div className="mb-8">
+          <div className="mb-8 mt-10 border-t border-gray-200 pt-5">
             <h3 className="text-xl font-semibold mb-4">
               Reply to: {decodeHtml(question.title?.rendered)}
             </h3>
@@ -233,15 +170,17 @@ export default function QuestionPage({ params }) {
                     initialHtml={replyContent}
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`bg-blue-500 text-white px-4 py-2 rounded-lg mt-4 ${
-                    isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'
-                  }`}
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit Reply'}
-                </button>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`bg-[#191153] text-white px-4 py-2 rounded-full mt-4 font-bold ${
+                      isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#2a1c7a]'
+                    }`}
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit Reply'}
+                  </button>
+                </div>
               </form>
             </div>
           </div>
@@ -255,8 +194,8 @@ export default function QuestionPage({ params }) {
             ) : (
               <ul className="space-y-3">
                 {recentTopics.map((topic) => (
-                  <li key={topic.id} className="pb-2 last:border-b-0">
-                    <Link href={`/questions?id=${topic.id}`} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                  <li key={topic.id} className="pb-2 last:border-b-0 border-b border-gray-200">
+                    <Link href={`/questions?id=${topic.id}`} className="hover:text-black text-sm font-bold">
                       {decodeHtml(topic.title?.rendered || topic.title)}
                     </Link>
                     <p className="text-xs text-gray-500 mt-1">

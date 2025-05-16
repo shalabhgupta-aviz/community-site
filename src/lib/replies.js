@@ -19,17 +19,26 @@ export async function getReplyOfTopic(topicId) {
   return response.json();
 }
 
-// ✅ Create a new reply
+// ✅ Create a new bbPress reply
 export async function createReply(topicId, content, token) {
-  const response = await fetch(`${API_BASE_URL}/reply?parent=${topicId}`, {
+  const res = await fetch(`${API_BASE_URL}/wp/v2/replies`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({
+      content,        // the body of the reply
+      parent: topicId, // topic ID the reply belongs to
+      status: 'publish'
+    }),
   });
-  return response.json();
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Failed to create reply');
+  }
+  return res.json();
 }
 
 // ✅ Update a reply

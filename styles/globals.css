@@ -43,3 +43,25 @@ button {
 a {
   @apply text-[#191153] hover:text-[#2a1c7a] font-noto-sans;
 }
+
+
+
+.reply-avatar-container {
+  position: relative;
+}
+
+.thread-line {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: calc(100% + 20px); /* Adjust the height as needed */
+  background-color: #d1d5db; /* Tailwind's gray-300 */
+  z-index: -1;
+}
+
+.reply-avatar-container img {
+  position: relative;
+  z-index: 1;
+}

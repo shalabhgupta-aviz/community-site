@@ -17,7 +17,7 @@ export default function SimpleRichTextEditor({ initialHtml = '', onChange }) {
   };
 
   return (
-    <div className="card p-4 border rounded min-h-[150px] focus:outline-none">
+    <div className="card rounded-[10px] min-h-[150px] focus:outline-none">
       <Editor
         style={{ height: '150px' }}
         value={text}
