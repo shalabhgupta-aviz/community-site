@@ -6,18 +6,21 @@ import { useEffect, useState } from 'react';
 import { getToken } from '@/lib/auth';
 
 export default function ProtectedRoute({ children }) {
-  const token = useSelector((state) => state.auth.token);
   const [authReady, setAuthReady] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const tokenFromCookie = getToken();
-    if (!token && !tokenFromCookie) {
-      router.replace('/login');
-    } else {
-      setAuthReady(true);
-    }
-  }, [token, router]);
+    const checkAuth = async () => {
+      const tokenFromCookie = getToken();
+      if (!tokenFromCookie) {
+        router.replace('/login');
+      } else {
+        setAuthReady(true);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   if (!authReady) {
     return <div className="p-4">Checking auth...</div>;

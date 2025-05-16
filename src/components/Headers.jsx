@@ -2,24 +2,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout as logoutAction } from '@/store/slices/authSlice';
-import { useRouter } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
+import { useSelector } from 'react-redux';
+import { useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
-import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiBell } from 'react-icons/fi';
 import Image from 'next/image';
 import { useNotifications } from '@/hooks/useNotifications';
 
 export default function Header() {
-  const dispatch = useDispatch();
-  const router = useRouter();
   const { data: session, status } = useSession();
   const reduxUser = useSelector((s) => s.auth.user);
   const user = reduxUser || session?.user;
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const { notifications, loading: notificationsLoading, error: notificationsError } = useNotifications();
@@ -40,21 +34,6 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const handleLogout = async () => {
-    try {
-      setIsLoggingOut(true);
-      setShowProfileDropdown(false);
-      await signOut({ callbackUrl: '/login' });
-      dispatch(logoutAction());
-      router.push('/login');
-    } catch (err) {
-      console.error('Logout failed:', err);
-      toast.error('Failed to logout. Please try again.');
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
 
   const handleNotificationClick = () => {
     setShowNotifications(false);
@@ -83,6 +62,16 @@ export default function Header() {
           <li>
             <Link href="/questions" className="hover:text-indigo-600 transition">
               Open Forum
+            </Link>
+          </li>
+          <li>
+            <Link href={`${process.env.NEXT_PUBLIC_AVIZ_LIVE_SITE}/resources/blogs/`} target="_blank" className="hover:text-indigo-600 transition">
+              Resources
+            </Link>
+          </li>
+          <li>
+            <Link href={`${process.env.NEXT_PUBLIC_AVIZ_LIVE_SITE}/resources/events/bootcamps/`} target="_blank" className="hover:text-indigo-600 transition">
+              Events
             </Link>
           </li>
         </ul>
@@ -183,13 +172,6 @@ export default function Header() {
                     >
                       Profile
                     </Link>
-                    <button
-                      onClick={handleLogout}
-                      disabled={isLoggingOut}
-                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 disabled:opacity-50"
-                    >
-                      {isLoggingOut ? 'Logging out…' : 'Logout'}
-                    </button>
                   </div>
                 )}
               </motion.div>
@@ -207,12 +189,6 @@ export default function Header() {
                   className="px-4 py-1 rounded-md border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition"
                 >
                   Login
-                </Link>
-                <Link
-                  href="/register"
-                  className="px-4 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                >
-                  Register
                 </Link>
               </motion.div>
             )}

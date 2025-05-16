@@ -66,6 +66,8 @@ export const authOptions = {
 
     // 👀 3) finally, expose them in your client session
     async session({ session, token }) {
+      console.log('session', session);
+      console.log('token', token);
       session.wpJwt  = token.wpJwt
       session.user   = token.wpUser
       return session

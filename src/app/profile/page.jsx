@@ -123,7 +123,6 @@ export default function ProfilePage() {
 
       const userData = {};
       if (editedUser.name !== user?.name) userData.name = editedUser.name;
-      if (editedUser.email !== user?.email) userData.email = editedUser.email;
       if (editedUser.website !== user?.url) userData.url = editedUser.website;
       if (editedUser.bio !== user?.description) userData.description = editedUser.bio;
 
@@ -133,7 +132,6 @@ export default function ProfilePage() {
         dispatch(setUser({
           ...user,
           name: editedUser.name,
-          email: editedUser.email,
           url: editedUser.website,
           description: editedUser.bio
         }));
@@ -339,9 +337,8 @@ export default function ProfilePage() {
                               <input
                                 type="email"
                                 value={editedUser.email}
-                                onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 mb-4 mt-2"
-                                required
+                                readOnly
                               />
                             </div>
                             <div className="mt-4">
