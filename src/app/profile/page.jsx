@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaCamera } from 'react-icons/fa';
 import { uploadUserAvatar } from '@/lib/users';
 import { useGetCurrentUserQuery, useUpdateUserMutation } from '@/store/api/wpApi';
+import { decodeHtml } from '@/plugins/decodeHTMLentities';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
@@ -21,12 +22,12 @@ export default function ProfilePage() {
   // Fetch current user via RTK Query
   const {
     data: user,
-    isLoading: isUserLoading, // Represents the loading state of fetching the current user
-    error: queryError, // Represents any error that occurs while fetching the current user
+    isLoading: isUserLoading,
+    error: queryError,
   } = useGetCurrentUserQuery();
 
   // Mutation hook for updating user profile
-  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation(); // isUpdating represents the loading state of the update operation
+  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
 
   // Local loading state for logout
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -171,7 +172,7 @@ export default function ProfilePage() {
   ) : [];
 
   const filteredTopics = user?.latest_topics?.items?.length > 0 ? user?.latest_topics?.items?.filter(topic =>
-    topic.title.toLowerCase().includes(topicsSearchTerm.toLowerCase())
+    topic.title.rendered.toLowerCase().includes(topicsSearchTerm.toLowerCase())
   ) : [];
 
   const latestActivity = [
@@ -484,10 +485,14 @@ export default function ProfilePage() {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -20 }}
                               transition={{ delay: index * 0.1 }}
+                              className='mt-5'
                             >
-                              <Link href={`/topics/${topic.id}`} className="block p-3 bg-gray-50 rounded mb-2 hover:bg-gray-100">
-                                <div className="font-medium">{topic.title}</div>
-                                <div className="text-sm text-gray-500">{topic.date ? new Date(topic.date).toLocaleDateString() : 'Date not available'}</div>
+                              <Link
+                                href={`/questions/${topic.slug || encodeURIComponent(decodeHtml(topic.title.rendered).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''))}?id=${topic.id}`}
+                                className="block p-3 bg-gray-50 rounded mb-2 hover:bg-gray-100"
+                              >
+                                <div className="font-bold text-md">{decodeHtml(topic.title.rendered)}</div>
+                                <div className="text-sm text-gray-500 mt-2">{topic.date ? new Date(topic.date).toLocaleDateString() : 'Date not available'}</div>
                               </Link>
                             </motion.div>
                           ))
@@ -533,10 +538,15 @@ export default function ProfilePage() {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -20 }}
                               transition={{ delay: index * 0.1 }}
+                              className='mt-5'
                             >
-                              <Link href={reply.link} className="block p-3 bg-gray-50 rounded mb-2 hover:bg-gray-100">
-                                <div className="font-medium">{reply.topic_title}</div>
-                                <div className="text-sm text-gray-500">{reply.date ? new Date(reply.date).toLocaleDateString() : 'Date not available'}</div>
+                              <Link
+                                href={`/questions/${reply.topic_slug || encodeURIComponent(decodeHtml(reply.topic_title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''))}?id=${reply.topic_id}`}
+                                className="block p-3 bg-gray-50 rounded mb-2 hover:bg-gray-100"
+                              >
+                                <div className="font-bold text-md">{reply.topic_title}</div>
+                                <div className="text-sm text-gray-500 mt-2 font-bold" dangerouslySetInnerHTML={{ __html: decodeHtml(reply.content) }} />
+                                <div className="text-sm text-gray-500 font-bold">{reply.date ? new Date(reply.date).toLocaleDateString() : 'Date not available'}</div>
                               </Link>
                             </motion.div>
                           ))
@@ -576,8 +586,11 @@ export default function ProfilePage() {
                             className="p-3 bg-gray-50 rounded mb-2"
                           >
                             <div className="flex items-center justify-between">
-                              <Link href={item.type === 'topic' ? `/topics/${item.id}` : item.link} className="font-medium text-blue-600 hover:underline">
-                                {item.type === 'topic' ? item.title : item.topic_title}
+                              <Link
+                                href={item.type === 'topic' ? item.link : `/questions/${item.topic_slug || encodeURIComponent(decodeHtml(item.topic_title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''))}?id=${item.topic_id}`}
+                                className="font-medium text-blue-600 hover:underline"
+                              >
+                                {item.type === 'topic' ? decodeHtml(item.title.rendered) : item.topic_title}
                               </Link>
                               <span className="text-sm text-gray-500">{item.type === 'topic' ? 'New Topic' : 'Reply'}</span>
                             </div>

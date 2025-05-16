@@ -183,6 +183,7 @@ export default function QuestionPage({ params }) {
             <div className="reply-thread">
               {replies.map((reply, index) => (
                 <div key={reply.id} className="flex mb-4">
+                  {console.log(reply)}
                   <div className="reply-avatar-container mr-4">
                     <img 
                       src={reply.author?.avatar || "https://via.placeholder.com/40"} 
