@@ -15,7 +15,8 @@ import { useSelector } from 'react-redux'; // Import useSelector from react-redu
 import './page.css';
 import { createReply, updateReply, deleteReply } from '@/lib/replies'; // Import updateReply and deleteReply
 import AlertBox from '@/components/AlertBox'; // Import AlertBox component
-import TimeDifferenceFormat from '@/components/TImeDifferenceFormat';
+import TimeDifferenceFormat from '@/components/TimeDifferenceFormat';
+import ReplyInputBox from '@/components/ReplyInputBox';
 
 export default function QuestionPage({ params }) {
   const searchParams = useSearchParams();
@@ -99,8 +100,8 @@ export default function QuestionPage({ params }) {
     }
   };
 
-  const handleSubmitReply = async e => {
-    e.preventDefault();
+  const handleSubmitReply = async () => {
+    // e.preventDefault();
     const token = document.cookie
       .split('; ')
       .find(row => row.startsWith('token='))
@@ -390,60 +391,18 @@ export default function QuestionPage({ params }) {
             )}
           </AnimatePresence>
 
-          <div className="mb-8 mt-10 border-t border-gray-200 pt-5">
-            <h3 className="text-xl font-semibold mb-4">
-              Reply to: {decodeHtml(question.title)}
-            </h3>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
-                {error}
-              </div>
-            )}
-
-            {draftError && (
-              <AlertBox
-                message={draftError}
-                type="error"
-                onClose={() => setDraftError(null)}
-                className="mb-4"
-              />
-            )}
-
-            <div className="mt-2 p-4 bg-white rounded-lg">
-              <form onSubmit={handleSubmitReply}>
-                <div className="editor-wrapper">
-                  <SimpleRichTextEditor
-                    onChange={(content) => {
-                      setReplyContent(content);
-                    }}
-                    initialHtml={replyContent}
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <button
-                    type="button"
-                    onClick={handleSaveDraft}
-                    className={`px-4 py-2 rounded-full mt-4 font-bold text-white
-                      ${draftReplies.length >= 3
-                        ? 'bg-gray-300 cursor-not-allowed'
-                        : 'bg-gray-500 hover:bg-gray-700'
-                      }`}
-                  >
-                    Save Draft
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`bg-[#191153] text-white px-4 py-2 rounded-full mt-4 font-bold ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#2a1c7a]'
-                      }`}
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Submit Reply'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+          <ReplyInputBox
+            replyContent={replyContent}
+            setReplyContent={setReplyContent}
+            onSubmit={handleSubmitReply}
+            onSaveDraft={handleSaveDraft}
+            isSubmitting={isSubmitting}
+            draftReplies={draftReplies}
+            draftError={draftError}
+            onDraftErrorClose={() => setDraftError(null)}
+            onErrorClose={() => setError(null)}
+            type="reply"
+          />
         </div>
 
         <div className="w-[30%]">

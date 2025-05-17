@@ -1,10 +1,13 @@
 'use client'
-import { use, useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { getUserByUsername } from '@/lib/users'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import { FaCalendarAlt, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa'
 
 export default function UserProfile({ params }) {
-  const { username } = use(params)
+  const { username } = React.use(params)
 
   const [user, setUser]               = useState(null)
   const [topics, setTopics]           = useState([])
@@ -19,27 +22,53 @@ export default function UserProfile({ params }) {
 
   // 1) initial load of page 1 /users
   useEffect(() => {
-    setLoading(true)
-    getUserByUsername(username, 1, 1)
-      .then(u => {
-        if (!u) throw Error()
-        setUser(u)
-        setTopics(u.latest_topics.items)
-        setReplies(u.latest_replies.items)
-        setTopicTotalPages(u.latest_topics.total_pages)
-        setReplyTotalPages(u.latest_replies.total_pages)
-      })
-      .catch(() => setError('Failed to load profile'))
-      .finally(() => setLoading(false))
-  }, [username])
+    const fetchUserProfile = async () => {
+      setLoading(true);
+      try {
+        const u = await getUserByUsername(username, 1, 1, 5);
+        if (!u) throw new Error();
+
+        // Dynamically map user response
+        const mappedUser = {
+          avatar: u.profile.avatar,
+          name: u.profile.name,
+          description: u.profile.bio,
+          url: u.profile.url,
+          email: u.profile.email,
+          joined_date: u.profile.registered,
+          location: u.profile.location || 'Not specified',
+        };
+
+        setUser(mappedUser);
+        setTopics(u.topics);
+        setReplies(u.replies.map(reply => ({
+          id: reply.id,
+          topicTitle: reply.topic_title,
+          topicId: reply.topic_id,
+          date: reply.date,
+          content: reply.content,
+          link: reply.link,
+          topicSlug: reply.topic_slug,
+        })));
+        setTopicTotalPages(u.topics_pagination.total_pages);
+        setReplyTotalPages(u.replies_pagination.total_pages);
+      } catch {
+        setError('Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [username]);
 
   // 2) load more topics
   useEffect(() => {
     if (topicPage === 1) return
     getUserByUsername(username, topicPage, 1)
       .then(u => {
-        setTopics(prev => [...prev, ...u.latest_topics.items])
-        setTopicTotalPages(u.latest_topics.total_pages)
+        setTopics(prev => [...prev, ...u.topics])
+        setTopicTotalPages(u.topics_pagination.total_pages)
       })
       .catch(() => {/* ignore */})
   }, [topicPage, username])
@@ -49,29 +78,53 @@ export default function UserProfile({ params }) {
     if (replyPage === 1) return
     getUserByUsername(username, 1, replyPage)
       .then(u => {
-        setReplies(prev => [...prev, ...u.latest_replies.items])
-        setReplyTotalPages(u.latest_replies.total_pages)
+        setReplies(prev => [...prev, ...u.replies.map(reply => ({
+          id: reply.id,
+          topicTitle: reply.topic_title,
+          topicId: reply.topic_id,
+          date: reply.date,
+          content: reply.content,
+          link: reply.link,
+          topicSlug: reply.topic_slug,
+        }))])
+        setReplyTotalPages(u.replies_pagination.total_pages)
       })
       .catch(() => {/* ignore */})
   }, [replyPage, username])
 
-  if (loading) return <p>Loading…</p>
+  if (loading) return <LoadingSpinner />
   if (error)   return <p className="text-red-500">{error}</p>
   if (!user)   return <p>User not found</p>
 
   return (
-    <div className="p-4 max-w-3xl mx-auto">
+    <div className="p-4 max-w-3xl mx-auto mt-8 mb-8">
       {/* Profile Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <img
+      <motion.div 
+        className="flex items-center gap-6 mb-8 p-6 bg-white rounded-lg"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.img
           src={user.avatar}
           alt={user.name}
-          className="w-24 h-24 rounded-full"
+          className="w-28 h-28 rounded-full border-4 border-blue-500"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
         />
-        <div>
-          <h1 className="text-2xl font-bold">{user.name}</h1>
+        <div className="flex flex-col gap-3 ml-5">
+          <motion.h1 
+            className="text-3xl font-bold text-gray-800"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {user.name}
+          </motion.h1>
           {user.description && (
-            <p className="text-gray-600">{user.description}</p>
+            <p className="text-gray-600 italic">{user.description}</p>
           )}
           {user.url && (
             <a
@@ -83,8 +136,21 @@ export default function UserProfile({ params }) {
               {user.url}
             </a>
           )}
+          <div className="mt-3 flex space-x-4 items-center">
+            <p className="text-sm text-gray-500 flex items-center">
+              <FaEnvelope className="mr-2" /> {user.email}
+            </p>
+            <span className="text-gray-300">|</span>
+            <p className="text-sm text-gray-500 flex items-center">
+              <FaCalendarAlt className="mr-2" /> {new Date(user.joined_date).toLocaleDateString()}
+            </p>
+            <span className="text-gray-300">|</span>
+            <p className="text-sm text-gray-500 flex items-center">
+              <FaMapMarkerAlt className="mr-2" /> {user.location}
+            </p>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Tabs */}
       <div className="flex border-b mb-4">
@@ -112,20 +178,33 @@ export default function UserProfile({ params }) {
 
       {/* Topics */}
       {activeTab === 'topics' && (
-        <div className="space-y-4">
+        <motion.div 
+          className="space-y-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           {topics.length > 0 ? (
             <>
               {topics.map(topic => (
-                <Link
+                <motion.div
                   key={topic.id}
-                  href={`/questions/${topic.id}`}
-                  className="block p-4 bg-white rounded-lg shadow hover:shadow-md transition"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <h3 className="font-medium">{topic.title.rendered}</h3>
-                  <span className="text-sm text-gray-500">
-                    {new Date(topic.date).toLocaleDateString()}
-                  </span>
-                </Link>
+                  <Link
+                    href={`/questions/${topic.slug}?id=${topic.id}`}
+                    className="block p-4 bg-white rounded-lg transition"
+                  >
+                    <h3 className="font-medium">{topic.title}</h3>
+                    <span className="text-sm text-gray-500">
+                      {new Date(topic.date).toLocaleDateString()}
+                    </span>
+                  </Link>
+                </motion.div>
               ))}
               {topicPage < topicTotalPages && (
                 <button
@@ -139,40 +218,42 @@ export default function UserProfile({ params }) {
           ) : (
             <p className="text-gray-500">No topics yet</p>
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* Replies */}
       {activeTab === 'replies' && (
-        <div className="space-y-4">
+        <motion.div 
+          className="space-y-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           {replies.length > 0 ? (
             <>
               {replies.map(reply => (
-                <div
+                <motion.div
                   key={reply.id}
-                  className="p-4 bg-white rounded-lg shadow"
+                  className="p-4 bg-white rounded-lg"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <h4 className="font-bold mb-2">
-                    Replied to: {reply.topic_title}
-                  </h4>
-                  <div
-                    className="prose max-w-none mb-2"
-                    dangerouslySetInnerHTML={{
-                      __html: `${reply.content.substring(
-                        0,
-                        200
-                      )}…`,
-                    }}
-                  />
+                  <Link
+                    href={`/questions/${reply.topicSlug}?id=${reply.topicId}`}
+                    className="hover:underline"
+                  >
+                    <h4 className="font-bold mb-2">
+                      Replied to: {reply.topicTitle}
+                    </h4>
+                  </Link>
                   <div className="text-sm text-gray-500">
-                    <Link
-                      href={reply.link}
-                      className="hover:underline"
-                    >
-                      {new Date(reply.date).toLocaleDateString()}
-                    </Link>
+                    {new Date(reply.date).toLocaleDateString()}
                   </div>
-                </div>
+                  <div className="text-sm text-gray-500" dangerouslySetInnerHTML={{ __html: reply.content }} />
+                </motion.div>
               ))}
               {replyPage < replyTotalPages && (
                 <button
@@ -186,7 +267,7 @@ export default function UserProfile({ params }) {
           ) : (
             <p className="text-gray-500">No replies yet</p>
           )}
-        </div>
+        </motion.div>
       )}
     </div>
   )

@@ -10,7 +10,11 @@ export default function SearchBarWithCat() {
   const [isLoading, setIsLoading] = useState(false);
   const searchRef = useRef(null);
 
-  const categories = ['SONiC', 'AI Assistant', 'Observability']
+  const categories = [
+    { name: 'SONiC', link: '/topics/sonic-amp-netops?id=31927' },
+    { name: 'AI Assistant', link: '/topics/ai-network-assistant-network-copilot?id=32110' },
+    { name: 'Observability', link: '/topics/sonic-amp-netops?id=31927' }
+  ];
 
   useEffect(() => {
     const debounceTimer = setTimeout(async () => {
@@ -24,7 +28,7 @@ export default function SearchBarWithCat() {
         const results = await allSearch(searchTerm);
         setSearchResults(results);
       } catch (error) {
-        console.error('Search failed:', error);
+        console.error('Error: Failed to search list', error);
       } finally {
         setIsLoading(false);
       }
@@ -53,17 +57,17 @@ export default function SearchBarWithCat() {
       <div className="inline-flex mt-8">
         {categories.map((cat, index) => (
           <motion.div
-            key={cat}
+            key={cat.name}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
             className='mb-2'
           >
             <Link
-              href={`/questions?category=${cat.toLowerCase()}`}
+              href={cat.link}
               className="rounded-t-lg mr-5 ml-5 bg-[#6E4BEB] text-white font-medium transition hover:bg-white hover:text-[#6E4BEB] p-4"
             >
-              {cat}
+              {cat.name}
             </Link>
           </motion.div>
         ))}

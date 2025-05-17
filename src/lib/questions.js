@@ -36,31 +36,76 @@ export async function getQuestions(page, perPage) {
   return response;
 }
 
-export async function createQuestion(forumId, title, content, token, question_tag) {
-  const res = await fetcher(`${API_BASE_URL}/topic`, {  
-    method: 'POST',
+
+export async function getRecentQuestions(perPage) {
+  const res = await fetcher(`${V1}/recent-topics?per_page=${perPage}`);
+  return res;
+}
+
+
+export async function createQuestion(
+  forumId,
+  title,
+  content,
+  token,
+  tags = [],
+  status = "publish"
+) {
+  const url = `${V1}/topic`;
+  const response = await fetcher(url, {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
+      forum_id: forumId,
       title,
       content,
-      status: 'publish',
-      forum_id: forumId,
-      topic_tag: question_tag,
+      status,
+      tags,            // if your PHP side expects 'tags' or 'topic_tag' adjust accordingly
     }),
   });
 
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'Failed to create question');
-  }
+  return response;
+}
+
+
+
+export async function updateQuestion(
+  questionId,
+  fields = {}, 
+  token
+) {
+  const url = `${V1}/topic/${questionId}`;
+  const res = await fetcher(url, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(fields),
+  });
 
   return res;
 }
 
-export async function getRecentQuestions(perPage) {
-  const res = await fetcher(`${V1}/recent-topics?per_page=${perPage}`);
+
+export async function deleteQuestion(
+  questionId,
+  token
+) {
+  const url = `${V1}/topic/${questionId}`;
+  const res = await fetcher(url, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || "Failed to delete question");
+  }
   return res;
 }

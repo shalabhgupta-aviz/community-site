@@ -1,13 +1,12 @@
+import { fetcher } from "./fetcher";
+
 // lib/users.js
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL; // e.g. https://dev.community.aviznetworks.com/wp-json/wp/v2
+const V1= process.env.NEXT_PUBLIC_API_URL_V1; // e.g. https://dev.community.aviznetworks.com/wp-json/wp/v2/cn
 
-export async function getUserByUsername(slug, topicPage = 1, replyPage = 1) {
-    const res = await fetcher(
-      `${API_BASE_URL}/users?slug=${slug}` +
-      `&topic_page=${topicPage}&reply_page=${replyPage}`
-    )
-    const data = await res.json()
-    return data[0] || null
+export async function getUserByUsername(slug, topicPage, replyPage, perPage) {
+    const res = await fetcher(`${V1}/user/slug/${slug}?topic_page=${topicPage}&reply_page=${replyPage}&per_page=${perPage}`)
+    return res
 }
 
 export async function getTopicsByUser(userId, page = 1, perPage = 10) {

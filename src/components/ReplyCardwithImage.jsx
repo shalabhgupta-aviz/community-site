@@ -2,7 +2,7 @@
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
 import React from 'react';
 import { motion } from 'framer-motion';
-import TimeDifferenceFormat from '@/components/TImeDifferenceFormat';
+import TimeDifferenceFormat from '@/components/TimeDifferenceFormat';
 
 const ReplyCardWithImage = ({ reply, index, totalReplies }) => {
 
