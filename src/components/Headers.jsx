@@ -61,7 +61,7 @@ export default function Header() {
         </Link>
 
         {/* Center links */}
-        <ul className="hidden md:flex space-x-6 text-gray-700 font-medium">
+        <ul className="flex space-x-6 text-gray-700 font-medium">
           <li>
             <Link href="/" className="hover:text-indigo-600 transition">
               Home

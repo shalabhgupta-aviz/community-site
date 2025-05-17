@@ -1,10 +1,20 @@
 
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
 import React from 'react';
+import { motion } from 'framer-motion';
+import TimeDifferenceFormat from '@/components/TImeDifferenceFormat';
 
 const ReplyCardWithImage = ({ reply, index, totalReplies }) => {
+
   return (
-    <div key={reply.id} className="flex mb-4">
+    <motion.div 
+      key={reply.id} 
+      className="flex mb-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+    >
       <div className="reply-avatar-container mr-4">
         <img 
           src={reply.author?.avatar || "https://via.placeholder.com/40"} 
@@ -24,7 +34,7 @@ const ReplyCardWithImage = ({ reply, index, totalReplies }) => {
           dangerouslySetInnerHTML={{ __html: decodeHtml(reply.content?.rendered) }}
         />
         <div className="text-xs text-gray-500">
-          {new Date(reply.date).toLocaleDateString()} at {new Date(reply.date).toLocaleTimeString()}
+          <TimeDifferenceFormat date={reply.date} />
         </div>
         {reply.image && (
           <div className="mt-3">
@@ -36,7 +46,7 @@ const ReplyCardWithImage = ({ reply, index, totalReplies }) => {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

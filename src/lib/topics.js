@@ -2,7 +2,7 @@ import { fetcher } from "./fetcher";
 
 // ✅ src/lib/api/topics.js
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-const V1 = process.env.NEXT_PUBLIC_API_URL_V1
+
 
 export async function getTopics() {
   const res = await fetcher(`${API_BASE_URL}/forum/`);
@@ -53,7 +53,3 @@ export async function deleteTopic(id, token) {
   return res;
 }
 
-export async function getRecentTopics(perPage = 10) {
-  const res = await fetcher(`${V1}/recent-topics?per_page=${perPage}`);
-  return res;
-}

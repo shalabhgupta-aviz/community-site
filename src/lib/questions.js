@@ -3,27 +3,38 @@
 import { fetcher } from "./fetcher";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const V1 = process.env.NEXT_PUBLIC_API_URL_V1
 
-// Get all questions under a topic
-export async function getQuestionsOfTopic(id) {
-  const response = await fetcher(`${API_BASE_URL}/topic?forum_id=${id}&per_page=5`);
+// Get all questions under a topic with pagination
+export async function getQuestionsOfTopic(id, page = 1, perPage = 5) {
+  const response = await fetcher(`${API_BASE_URL}/topic?forum_id=${id}&per_page=${perPage}&page=${page}`);
   console.log('response', response);
   return response;
 }
 
 // Get single question detail by ID with 5 latest replies
-export async function getQuestionDetails(questionId) {
-  const response = await fetcher(`${process.env.NEXT_PUBLIC_API_URL_V1}/topic/${questionId}`);
-  console.log('questionId', questionId);
+export async function getQuestionDetails(questionId, page, perPage, token) {
+  const url = `${V1}/topic/${questionId}?per_page=${perPage}&page=${page}`
+  // only attach the header if we have a token
+  const headers = {};
+  console.log('token', url, {
+    credentials: 'include',      // send cookies if you’re using WP‐cookie auth
+    headers,
+  });
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetcher(url, {
+    credentials: 'include',      // send cookies if you’re using WP‐cookie auth
+    headers,
+  }
+);
   console.log('response', response);
   return response;
 }
 
-export async function getQuestions(page = 1, perPage = 10) {
+export async function getQuestions(page, perPage) {
   const response = await fetcher(`${API_BASE_URL}/topic?per_page=${perPage}&page=${page}`);
   return response;
 }
-
 
 export async function createQuestion(forumId, title, content, token, question_tag) {
   const res = await fetcher(`${API_BASE_URL}/topic`, {  
@@ -46,5 +57,10 @@ export async function createQuestion(forumId, title, content, token, question_ta
     throw new Error(err.message || 'Failed to create question');
   }
 
+  return res;
+}
+
+export async function getRecentQuestions(perPage) {
+  const res = await fetcher(`${V1}/recent-topics?per_page=${perPage}`);
   return res;
 }
