@@ -82,3 +82,15 @@ export async function uploadUserAvatar(file, token, userId) {
   }
   return userRes.json();
 }
+
+
+export async function searchUsers(query) {
+  if (!query) return [];
+  // hit your WP endpoint that can search by username
+  const res = await fetch(
+    `${V1}/users?username=${encodeURIComponent(query)}`
+  );
+  if (!res.ok) return [];
+  const users = await res.json();
+  return users.map(u => ({ id: u.username, display: u.username }));
+}

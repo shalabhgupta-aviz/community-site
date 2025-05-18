@@ -36,6 +36,7 @@ export default function QuestionPage({ params }) {
   const [activeTab, setActiveTab] = useState('published'); // State to manage active tab
   const [draftError, setDraftError] = useState(null); // State to manage draft error
   const [editingDraftId, setEditingDraftId] = useState(null); // State to track the draft being edited
+  const [userMap, setUserMap] = useState({});
   // Get current user from the Redux store
   const currentUser = useSelector((state) => state.user);
 
@@ -67,6 +68,31 @@ export default function QuestionPage({ params }) {
     };
     load();
   }, [id]);
+
+  useEffect(() => {
+    const slugs = new Set();
+    replies.forEach(r => {
+      const html = r.content.rendered;
+      Array.from(html.matchAll(/@([a-z0-9_-]+)/gi)).forEach(m => slugs.add(m[1]));
+    });
+    if (slugs.size) {
+      fetch(
+        `${process.env.NEXT_PUBLIC_API_URL_V1}/users?username=${[...slugs].join(',')}`
+      )
+        .then(r => r.json())
+        .then(users => {
+          const map = {};
+          users.forEach(u => {
+            map[u.value] = {
+              label:   u.label,
+              profile: u.profile,
+              avatar:  u.avatar,
+            };
+          });
+          setUserMap(map);
+        });
+    }
+  }, [replies]);
 
   useEffect(() => {
     const fetchRecentTopics = async () => {

@@ -1,11 +1,36 @@
 
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import TimeDifferenceFormat from '@/components/TimeDifferenceFormat';
+import LinkifyMentions from './LinkifyMentions';
+import { AiOutlineLike, AiFillLike } from 'react-icons/ai'; // Modern thumbs up icons
+import { toggleLike } from '@/lib/replies'; // Import the toggleLike function
 
-const ReplyCardWithImage = ({ reply, index, totalReplies }) => {
+const ReplyCardWithImage = ({ reply, index, totalReplies, userMap }) => {
+  const [isLiked, setIsLiked] = useState(reply.likedByCurrentUser); // Use state to manage like status
+  const [likeCount, setLikeCount] = useState(reply.likeCount || 0); // Use state to manage like count
 
+  const handleLikeClick = async () => {
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+      ?.split('=')[1] || '';
+
+    if (!token) {
+      console.log('No token found');
+      return;
+    }
+
+    console.log('handleLikeClick', reply.id, token);
+    try {
+      await toggleLike(reply.id, token); // Call toggleLike with reply id and token
+      setIsLiked(!isLiked); // Toggle the like status
+      setLikeCount(isLiked ? likeCount - 1 : likeCount + 1); // Update the like count
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
   return (
     <motion.div 
       key={reply.id} 
@@ -25,14 +50,15 @@ const ReplyCardWithImage = ({ reply, index, totalReplies }) => {
           <div className="thread-line h-full w-0.5 bg-gray-300 mx-auto mt-2"></div>
         )}
       </div>
-      <div className="flex-1 bg-white p-4 rounded-lg shadow-sm">
+      <div className="flex-1 bg-white p-4 rounded-lg shadow-sm relative">
+        <div className="absolute top-2 right-2 flex items-center" onClick={handleLikeClick}>
+          {isLiked ? <AiFillLike className="text-blue-500" /> : <AiOutlineLike className="text-gray-500" />}
+          <span className="ml-1 text-sm text-gray-600">{likeCount}</span>
+        </div>
         <div className="font-bold text-black mb-1 text-md">
           {reply.author?.name || "Anonymous User"}
         </div>
-        <div
-          className="text-gray-600 mb-3"
-          dangerouslySetInnerHTML={{ __html: decodeHtml(reply.content?.rendered) }}
-        />
+        <LinkifyMentions html={reply?.content?.rendered} userMap={userMap} />
         <div className="text-xs text-gray-500">
           <TimeDifferenceFormat date={reply.date} />
         </div>

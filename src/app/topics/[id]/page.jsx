@@ -68,7 +68,7 @@ export default function TopicPage() {
                 await updateQuestion(editingQuestionId, { content: newQuestionContent, status: 'publish' }, token);
                 setEditingQuestionId(null);
             } else {
-                await createQuestion(id, newQuestionTitle, newQuestionContent, token);
+                await createQuestion(id, newQuestionTitle, newQuestionContent, token, 'publish');
             }
             const updatedTopicData = await getTopicDetails(id, 1, 5, token);
             setQuestions(updatedTopicData.topics);
@@ -121,6 +121,22 @@ export default function TopicPage() {
         }
     };
 
+
+    const handleSaveDraft = async () => {
+        
+        try {
+          const token = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('token='))
+            .split('=')[1];
+          await createQuestion(id, newQuestionTitle, newQuestionContent, token, 'draft');
+          const updated = await getTopicDetails(id, 1, 5, token);
+          setQuestions(updated.topics);
+        } catch (err) {
+          console.error('Failed to save draft:', err);
+        }
+      };
+
     if (loading) return (
         <div className="flex justify-center items-center min-h-screen">
             <LoadingSpinner />
@@ -156,6 +172,7 @@ export default function TopicPage() {
                                     replyContent={newQuestionContent}
                                     setReplyContent={setNewQuestionContent}
                                     onSubmit={handleAddQuestion}
+                                    onSaveDraft={handleSaveDraft}
                                     isSubmitting={isSubmitting}
                                     draftReplies={[]}
                                     error={null}

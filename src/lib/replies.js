@@ -88,3 +88,14 @@ export async function getRecentReplies() {
   if (replies.error) throw new Error(replies.error || 'Failed to fetch recent replies');
   return replies;
 } 
+
+
+
+export async function toggleLike(replyId, token) {
+  const res = await fetch(`${V1}/reply/${replyId}/like`, {
+    method: 'POST',
+    credentials: 'include',            // send cookies or JWT header
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  return res;
+}

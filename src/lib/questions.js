@@ -48,8 +48,7 @@ export async function createQuestion(
   title,
   content,
   token,
-  tags = [],
-  status = "publish"
+  status
 ) {
   const url = `${V1}/topic`;
   const response = await fetcher(url, {
@@ -63,10 +62,14 @@ export async function createQuestion(
       title,
       content,
       status,
-      tags,            // if your PHP side expects 'tags' or 'topic_tag' adjust accordingly
     }),
   });
-
+  console.log('response',{
+    forum_id: forumId,
+    title,
+    content,
+    status,
+  } );
   return response;
 }
 
@@ -91,21 +94,15 @@ export async function updateQuestion(
 }
 
 
-export async function deleteQuestion(
-  questionId,
-  token
-) {
-  const url = `${V1}/topic/${questionId}`;
+export async function deleteQuestion(topicId, token) {
+  const url = `${V1}/topic/${topicId}`;
   const res = await fetcher(url, {
-    method: "DELETE",
+  method: 'DELETE',
+    credentials: 'include',
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
   });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || "Failed to delete question");
-  }
   return res;
 }
