@@ -8,17 +8,16 @@ import {
   loginSuccess,
   loginFailure,
   normal
-} from '@/store/slices/authSlice';
+} from '../../store/authSlice';
 import {
   loginUser,
   register as registerUser,
   setToken,
-} from '@/lib/auth';
+} from '../../lib/auth';
 import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import { decodeHtml } from '@/plugins/decodeHTMLentities';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function LoginPage() {
   const dispatch = useDispatch();

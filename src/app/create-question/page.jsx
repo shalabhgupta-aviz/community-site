@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import { getTopics } from '@/lib/topics';
+import ProtectedRoute from '../../components/ProtectedRoute';
+import { getTopics } from '../../lib/topics';
 
 export default function CreateQuestionPage() {
   const router = useRouter();

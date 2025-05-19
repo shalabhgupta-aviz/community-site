@@ -4,7 +4,7 @@ import Image from 'next/image'
 import '../../styles/globals.css'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import SearchBarWithCat from '@/components/SearchBarWithCat'
+import SearchBarWithCat from '../components/SearchBarwithCat'
 
 
 const technologyPartners = [

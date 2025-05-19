@@ -1,8 +1,8 @@
 import { Noto_Sans } from 'next/font/google';
-import './globals.css';
-import Layout from '@/layouts/Layout';
-import ClientProvider from '@/components/ClientProvider';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import '../styles/globals.css';
+import Layout from '../layouts/Layout';
+import ClientProvider from '../components/ClientProvider';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 const notoSans = Noto_Sans({
   subsets: ['latin'],

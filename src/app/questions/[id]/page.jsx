@@ -2,19 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getQuestionDetails } from '@/lib/questions';
-import { getRecentQuestions } from '@/lib/questions'; // Import the getRecentQuestions function
-import { decodeHtml } from '@/plugins/decodeHTMLentities';
+import { getQuestionDetails } from '../../../lib/questions';
+import { getRecentQuestions } from '../../../lib/questions'; // Import the getRecentQuestions function
+import { decodeHtml } from '../../../plugins/decodeHTMLentities';
 import { useSearchParams, usePathname } from 'next/navigation';
-import SimpleRichTextEditor from '@/plugins/SimpleRichTextEditor';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import Breadcrumb from '@/components/Breadcrumb';
-import ReplyCardWithImage from '@/components/ReplyCardwithImage';
+import LoadingSpinner from '../../../components/LoadingSpinner';
+import Breadcrumb from '../../../components/Breadcrumb';
+import ReplyCardWithImage from '../../../components/ReplyCardwithImage';
 import { motion, AnimatePresence } from 'framer-motion';
 import './page.css';
-import { createReply, updateReply, deleteReply } from '@/lib/replies'; // Import updateReply and deleteReply
-import TimeDifferenceFormat from '@/components/TimeDifferenceFormat';
-import ReplyInputBox from '@/components/ReplyInputBox';
+import { createReply, updateReply, deleteReply } from '../../../lib/replies'; // Import updateReply and deleteReply
+import TimeDifferenceFormat from '../../../components/TimeDifferenceFormat';
+import ReplyInputBox from '../../../components/ReplyInputBox';
 
 export default function QuestionPage({ params }) {
   const searchParams = useSearchParams();

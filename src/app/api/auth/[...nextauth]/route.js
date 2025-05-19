@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import LinkedInProvider from 'next-auth/providers/linkedin'
-import { fetcher } from '@/lib/fetcher'
+import { fetcher } from '../../../../lib/fetcher'
 
 const {
   WP_URL,

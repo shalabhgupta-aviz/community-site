@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import ProtectedRoute from '../../components/ProtectedRoute';
 import Link from 'next/link';
-import { getRepliesByUser } from '@/lib/users';
+import { getRepliesByUser } from '../../lib/users';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
 import { motion, AnimatePresence } from 'framer-motion';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo('en-US');

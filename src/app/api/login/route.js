@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetcher } from '@/lib/fetcher';
+import { fetcher } from '../../../lib/fetcher';
 
 const NEXT_PUBLIC_JWT_AUTH_URL = process.env.NEXT_PUBLIC_JWT_AUTH_URL;
 

@@ -1,13 +1,12 @@
 "use client"
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { decodeHtml } from '@/plugins/decodeHTMLentities';
-import { getQuestions } from '@/lib/questions';
+import { decodeHtml } from '../../plugins/decodeHTMLentities';
+import { getQuestions } from '../../lib/questions';
 import { motion } from 'framer-motion';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import Image from 'next/image';
-import { allSearch } from '@/lib/search';
-import SearchBarWithCat from '@/components/SearchBarWithCat';
+import SearchBarWithCat from '../../components/SearchBarWithCat';
 
 const technologyPartners = [
   'https://dev.community.aviznetworks.com/wp-content/uploads/2025/04/broadcom.png',

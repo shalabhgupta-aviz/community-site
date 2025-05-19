@@ -1,9 +1,9 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { getUserByUsername } from '@/lib/users'
+import { getUserByUsername } from '../../lib/users'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import LoadingSpinner from '@/components/LoadingSpinner'
+import LoadingSpinner from '../../components/LoadingSpinner'
 import { FaCalendarAlt, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa'
 
 export default function UserProfile({ params }) {

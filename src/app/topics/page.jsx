@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getTopics } from '@/lib/topics';
-import { decodeHtml } from '@/plugins/decodeHTMLentities';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { decodeHtml } from '../../plugins/decodeHTMLentities';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { motion } from 'framer-motion';
-import TimeDifferenceFormat from '@/components/TimeDifferenceFormat';
+import TimeDifferenceFormat from '../../components/TimeDifferenceFormat';
 
 export default function TopicsPage() {
   const [topics, setTopics] = useState([]);

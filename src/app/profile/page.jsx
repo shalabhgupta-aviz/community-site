@@ -1,19 +1,19 @@
 'use client';
 
-import ProtectedRoute from '@/components/ProtectedRoute';
+import ProtectedRoute from '../../components/ProtectedRoute';
 import { useSelector, useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
-import { logout as logoutAction, setUser } from '@/store/slices/authSlice';
+import { logout as logoutAction, setUser } from '../../store/slices/authSlice';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCamera } from 'react-icons/fa';
-import { uploadUserAvatar } from '@/lib/users';
-import { useGetCurrentUserQuery, useUpdateUserMutation } from '@/store/api/wpApi';
-import { decodeHtml } from '@/plugins/decodeHTMLentities';
-import { getToken } from '@/lib/auth';
+import { uploadUserAvatar } from '../../lib/users';
+import { useGetCurrentUserQuery, useUpdateUserMutation } from '../../store/api/wpApi';
+import { decodeHtml } from '../../plugins/decodeHTMLentities';
+import { getToken } from '../../lib/auth';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();

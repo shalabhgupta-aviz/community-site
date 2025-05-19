@@ -3,18 +3,18 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { createQuestion, updateQuestion, deleteQuestion, getQuestionsOfTopic } from '@/lib/questions';
-import { getTopicDetails } from '@/lib/topics';
-import { decodeHtml } from '@/plugins/decodeHTMLentities';
+import { createQuestion, updateQuestion, deleteQuestion, getQuestionsOfTopic } from '../../lib/questions';
+import { getTopicDetails } from '../../lib/topics';
+import { decodeHtml } from '../../plugins/decodeHTMLentities';
 import { motion, AnimatePresence } from 'framer-motion';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import Breadcrumb from '@/components/Breadcrumb';
-import TimeDifferenceFormat from '@/components/TimeDifferenceFormat';
-import SideBar from '@/components/SideBar';
-import ReplyInputBox from '@/components/ReplyInputBox';
-import CardWithTitleAndImage from '@/components/CardWithTitleAndImage';
-import { getRecentQuestions } from '@/lib/questions';
-import LoadMoreButton from '@/components/LoadMoreButton';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import Breadcrumb from '../../components/Breadcrumb';
+import TimeDifferenceFormat from '../../components/TimeDifferenceFormat';
+import SideBar from '../../components/SideBar';
+import ReplyInputBox from '../../components/ReplyInputBox';
+import CardWithTitleAndImage from '../../components/CardWithTitleAndImage';
+import { getRecentQuestions } from '../../lib/questions';
+import LoadMoreButton from '../../components/LoadMoreButton';
 
 export default function TopicPage() {
     const searchParams = useSearchParams();
