@@ -8,7 +8,7 @@ import {
   loginSuccess,
   loginFailure,
   normal
-} from '../../store/authSlice';
+} from '../../store/slices/authSlice';
 import {
   loginUser,
   register as registerUser,

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { decodeHtml } from '../../plugins/decodeHTMLentities';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { motion } from 'framer-motion';
-import TimeDifferenceFormat from '../../components/TimeDifferenceFormat';
+import TimeFormating from '../../components/TimeFormating';
 
 export default function TopicsPage() {
   const [topics, setTopics] = useState([]);
@@ -120,7 +120,7 @@ export default function TopicsPage() {
                       }}
                     />
                     <div className="text-sm text-gray-500">
-                      <span><TimeDifferenceFormat date={topic.date} /></span>
+                      <span><TimeFormating date={topic.date} /></span>
                     </div>
                   </Link>
                 </motion.div>

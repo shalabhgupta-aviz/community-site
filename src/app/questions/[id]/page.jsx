@@ -12,7 +12,7 @@ import ReplyCardWithImage from '../../../components/ReplyCardwithImage';
 import { motion, AnimatePresence } from 'framer-motion';
 import './page.css';
 import { createReply, updateReply, deleteReply } from '../../../lib/replies'; // Import updateReply and deleteReply
-import TimeDifferenceFormat from '../../../components/TimeDifferenceFormat';
+import TimeFormating from '../../../components/TimeFormating';
 import ReplyInputBox from '../../../components/ReplyInputBox';
 
 export default function QuestionPage({ params }) {
@@ -288,7 +288,7 @@ export default function QuestionPage({ params }) {
         )}
         <div className="text-sm text-gray-500 flex justify-between items-center">
           <span>
-            <TimeDifferenceFormat date={question.date} />
+            <TimeFormating date={question.date} />
           </span>
           <span className="flex">
             <Link href={`/users/${replies[0]?.author.username}`} className="flex items-center gap-2">

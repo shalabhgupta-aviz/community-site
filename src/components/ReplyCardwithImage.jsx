@@ -1,8 +1,7 @@
-
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import TimeDifferenceFormat from '@/components/TimeDifferenceFormat';
+import TimeFormating from '@/components/TimeFormating';
 import LinkifyMentions from './LinkifyMentions';
 import { AiOutlineLike, AiFillLike } from 'react-icons/ai'; // Modern thumbs up icons
 import { toggleLike } from '@/lib/replies'; // Import the toggleLike function
@@ -62,7 +61,7 @@ const ReplyCardWithImage = ({ reply, index, totalReplies, userMap }) => {
         </div>
         <LinkifyMentions html={reply?.content?.rendered} userMap={userMap} />
         <div className="text-xs text-gray-500">
-          <TimeDifferenceFormat date={reply.date} />
+          <TimeFormating date={reply.date} />
         </div>
         {reply.image && (
           <div className="mt-3">

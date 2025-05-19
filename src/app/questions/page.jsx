@@ -6,7 +6,7 @@ import { getQuestions } from '../../lib/questions';
 import { motion } from 'framer-motion';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Image from 'next/image';
-import SearchBarWithCat from '../../components/SearchBarWithCat';
+import SearchBarWithCat from '../../components/SearchBarwithCat';
 
 const technologyPartners = [
   'https://dev.community.aviznetworks.com/wp-content/uploads/2025/04/broadcom.png',

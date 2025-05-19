@@ -6,7 +6,7 @@ import { FaRegBell } from 'react-icons/fa'
 import LoadingSpinner from './LoadingSpinner'
 import AlertBox from './AlertBox'
 import { getNotifications, markOneAsRead, markAllAsRead } from '@/lib/notifications'
-import TimeDifferenceFormat from './TimeDifferenceFormat'
+import TimeFormating from './TimeFormating'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function NotificationsBell() {
@@ -154,7 +154,7 @@ export default function NotificationsBell() {
                           {n.message}
                         </div>
                         <div className="text-xs text-gray-500">
-                          <TimeDifferenceFormat date={n.date} />
+                          <TimeFormating date={n.date} />
                         </div>
                       </div>
                     </motion.li>

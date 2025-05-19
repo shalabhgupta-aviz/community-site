@@ -1,6 +1,6 @@
 import React from 'react';
 
-const TimeDifferenceFormat = ({ date }) => {
+const TimeFormating = ({ date }) => {
     const formatTimeDifference = (date) => {
         const now = new Date();
         const diffInSeconds = Math.floor((now - date) / 1000);
@@ -30,4 +30,4 @@ const TimeDifferenceFormat = ({ date }) => {
     );
 };
 
-export default TimeDifferenceFormat;
+export default TimeFormating;

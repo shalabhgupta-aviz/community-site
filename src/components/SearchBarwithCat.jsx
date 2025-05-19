@@ -2,9 +2,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { allSearch } from '@/lib/search';
+import { allSearch } from '../lib/search';
 
-export default function SearchBarWithCat() {
+export default function SearchBarwithCat() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);

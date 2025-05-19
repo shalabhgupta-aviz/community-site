@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
-import TimeDifferenceFormat from '@/components/TimeDifferenceFormat';
+import TimeFormating from '@/components/TimeFormating';
 
 export default function CardWithTitleAndImage({ 
   title, 
@@ -46,7 +46,7 @@ export default function CardWithTitleAndImage({
       <div className="text-gray-600 mb-4" dangerouslySetInnerHTML={{ __html: decodeHtml(description) }} />
       <div className="flex items-center justify-between w-full">
         <span className="text-xs text-gray-500 font-medium">
-          <TimeDifferenceFormat date={date} />
+          <TimeFormating date={date} />
         </span>
         <div className="flex space-x-2">
           {showEditButton && (
