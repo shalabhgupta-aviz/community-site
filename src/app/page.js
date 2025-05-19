@@ -71,9 +71,8 @@ export default function Home() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
-        className='max-w-[80%] bg-white rounded-[20px] shadow-lg mt-20 mb-20 p-20'
+        className='max-w-[80%] w-full bg-white rounded-[20px] shadow-lg mt-20 mb-20 p-20'
       >
-
       {/* Technology Partners */}
       <motion.section 
         initial={{ opacity: 0 }}

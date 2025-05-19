@@ -13,6 +13,7 @@ import { FaCamera } from 'react-icons/fa';
 import { uploadUserAvatar } from '@/lib/users';
 import { useGetCurrentUserQuery, useUpdateUserMutation } from '@/store/api/wpApi';
 import { decodeHtml } from '@/plugins/decodeHTMLentities';
+import { getToken } from '@/lib/auth';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
@@ -107,11 +108,17 @@ export default function ProfilePage() {
     setSelectedImage(URL.createObjectURL(file));
 
     try {
-      if (!session?.wpJwt || !session?.user?.id) {
+      const token = session?.wpJwt || getToken();
+      const userId = session?.user?.id;
+
+      console.log('token', token);
+
+      if (!token || !userId) {
         throw new Error('Missing authentication data');
       }
 
-      const response = await uploadUserAvatar(file, session.wpJwt, session.user.id);
+      const response = await uploadUserAvatar(file, token, userId);
+      console.log('response', response);
 
       if (response?.meta?.custom_avatar) {
         toast.success('Profile image updated successfully');

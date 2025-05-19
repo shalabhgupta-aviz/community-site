@@ -6,7 +6,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   loginStart,
   loginSuccess,
-  loginFailure
+  loginFailure,
+  normal
 } from '@/store/slices/authSlice';
 import {
   loginUser,
@@ -17,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { decodeHtml } from '@/plugins/decodeHTMLentities';
 
 export default function LoginPage() {
   const dispatch = useDispatch();
@@ -59,26 +61,30 @@ export default function LoginPage() {
 
   const handleSubmit = async e => {
     e.preventDefault();
+    console.log('handleSubmit', isRegister, username, email, password);
     dispatch(loginStart());
 
     try {
       let data;
       if (isRegister) {
         // create WP user via your REST register endpoint
-        await registerUser(username, email, password);
-        data = await loginUser(email, password);
+        data = await registerUser(username, email, password);
       } else {
         data = await loginUser(email, password);
       }
-
-      dispatch(loginSuccess({
-        user:  data.user,
-        token: data.token
-      }));
-      setToken(data.token);
-      router.replace('/profile');
+      if (data.token) {
+        dispatch(loginSuccess({
+          user:  data.user.data,
+          token: data.token
+        }));
+        setToken(data.token);
+        router.replace('/profile');
+      }
     } catch (err) {
       dispatch(loginFailure(err.message));
+      setTimeout(() => {
+        dispatch(normal());
+      }, 3000);
     }
   };
 
@@ -147,9 +153,8 @@ export default function LoginPage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="text-red-600 text-sm"
-              >
-                {error}
-              </motion.div>
+                dangerouslySetInnerHTML={{ __html: error }}
+              />
             )}
           </AnimatePresence>
 
@@ -161,6 +166,13 @@ export default function LoginPage() {
             {isRegister ? 'Agree & Join' : 'Sign in'}
           </button>
         </form>
+
+        <p className="text-xs text-gray-500 mt-2 text-center">
+          By clicking sign up Agree & Join or Continue, you agree to the LinkedIn{' '}
+          <a href="#" className="text-blue-600 underline">User Agreement</a>,{' '}
+          <a href="#" className="text-blue-600 underline">Privacy Policy</a>, and{' '}
+          <a href="#" className="text-blue-600 underline">Cookie Policy</a>.
+        </p>
 
         <div className="relative my-4 text-center">
           <span className="px-2 bg-white text-gray-400">or</span>
@@ -175,13 +187,15 @@ export default function LoginPage() {
             <img src="/google.svg" alt="Google" className="h-5 w-5" />
             Continue with Google
           </button>
-          <button
-            onClick={() => signIn('linkedin',{ callbackUrl: '/profile' })}
+          {/* <button
+            onClick={() => {
+              window.location.href = "/api/linkedin/auth";
+            }}
             className="w-full flex items-center justify-center gap-3 py-2 border rounded-md hover:bg-gray-50"
           >
             <img src="/linkedin.svg" alt="LinkedIn" className="h-5 w-5" />
             Continue with LinkedIn
-          </button>
+          </button> */}
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-600">

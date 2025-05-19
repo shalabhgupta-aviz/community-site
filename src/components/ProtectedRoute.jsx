@@ -12,7 +12,10 @@ export default function ProtectedRoute({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       const tokenFromCookie = getToken();
-      if (!tokenFromCookie) {
+      const authData = localStorage.getItem('persist:root');
+      const auth = authData ? JSON.parse(JSON.parse(authData).auth) : null;
+
+      if (!tokenFromCookie && !auth) {
         router.replace('/login');
       } else {
         setAuthReady(true);

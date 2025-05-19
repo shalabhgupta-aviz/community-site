@@ -16,8 +16,14 @@ export default function TopicsPage() {
   useEffect(() => {
     const fetchTopics = async () => {
       try {
-        const topicsData = await getTopics();
-        setTopics(topicsData);
+        const res = await getTopics();
+        console.log("res", res);
+        if (res.status === 200) {
+          const topicsData = res.data;
+          setTopics(topicsData);
+        } else {
+          setError('Failed to load topics');
+        }
       } catch (err) {
         setError('Failed to load topics');
         console.error(err);

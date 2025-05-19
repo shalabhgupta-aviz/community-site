@@ -9,7 +9,6 @@ import Image from 'next/image';
 import { allSearch } from '@/lib/search';
 import SearchBarWithCat from '@/components/SearchBarWithCat';
 
-
 const technologyPartners = [
   'https://dev.community.aviznetworks.com/wp-content/uploads/2025/04/broadcom.png',
   'https://dev.community.aviznetworks.com/wp-content/uploads/2025/04/broadcom.png',
@@ -43,10 +42,14 @@ export default function QuestionsPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const qs = await getQuestions(page, 10);    
-        console.log("qs", qs);                          
-        setQuestions(prev => page === 1 ? qs : [...prev, ...qs]);
-        setHasMore(qs.length === 10); // If we get less than 10 items, we've reached the end
+        const res = await getQuestions(page, 10);
+        if (res.status === 200) {
+          const qs = res.data;
+          setQuestions(prev => page === 1 ? qs : [...prev, ...qs]);
+          setHasMore(qs.length === 10); // If we get less than 10 items, we've reached the end
+        } else {
+          setError('Failed to load questions');
+        }
       } catch (err) {
         console.error(err);
         setError('Failed to load questions');
@@ -103,7 +106,7 @@ export default function QuestionsPage() {
         </div>
       </motion.section>
 
-      <div className="flex gap-8 max-w-7xl mx-auto p-4 pt-10 mb-20">
+      <div className="flex gap-8 max-w-7xl mx-auto p-4 pt-10 mb-20 w-full max-w-[80%]">
         {/* Left Sidebar - 20% */}
         <motion.div 
           initial={{ opacity: 0, x: -20 }}

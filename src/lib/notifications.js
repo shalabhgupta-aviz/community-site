@@ -30,5 +30,8 @@ export async function markOneAsRead(id, token) {
         'Authorization': `Bearer ${token}`
       }
     });
-    return notifications;
+    if (notifications.status === 200) {
+        return notifications.data;  
+    }
+    return [];
   }

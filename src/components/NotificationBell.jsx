@@ -1,70 +1,91 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useRef } from 'react';
-import useSWR from 'swr';
-import { FaRegBell } from 'react-icons/fa';
-import { getNotifications, markOneAsRead, markAllAsRead } from '@/lib/notifications';
-import { getToken } from '@/lib/auth';
-import TimeDifferenceFormat from './TImeDifferenceFormat';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react'
+import useSWR from 'swr'
+import { FaRegBell } from 'react-icons/fa'
+import LoadingSpinner from './LoadingSpinner'
+import AlertBox from './AlertBox'
+import { getNotifications, markOneAsRead, markAllAsRead } from '@/lib/notifications'
+import TimeDifferenceFormat from './TimeDifferenceFormat'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function NotificationsBell() {
+  const [open, setOpen] = useState(false)
+  const prevCount = useRef(0)
+  const containerRef = useRef(null)
+
   const token = document.cookie
     .split('; ')
     .find(row => row.startsWith('token='))
-    ?.split('=')[1] || '';
+    ?.split('=')[1] || ''
 
-  const { data = [], error, mutate } = useSWR(
-    'notifications',
+  // SWR fetch
+  const { data, error, mutate, isValidating } = useSWR(
+    ['notifications', token],
     () => getNotifications(token),
-    { refreshInterval: 300000 }
-  );
+    { refreshInterval: 10000 }
+  )
 
-  // only count the ones that are still unread:
-  const unreadCount = data.filter(n => !n.read).length;
+  // 3) Coerce into array so .filter/.map never crashes
+  const notifications = Array.isArray(data) ? data : []
 
-  const [open, setOpen] = useState(false);
-  const prevCount = useRef(0);
-  const containerRef = useRef(null);
+  const unreadCount = notifications.filter(n => !n.read).length
 
-  // Auto-open when new arrive
   useEffect(() => {
-    if (data.length > prevCount.current) setOpen(true);
-    prevCount.current = data.length;
-  }, [data.length]);
+    if (notifications.length > prevCount.current) setOpen(true)
+    prevCount.current = notifications.length
+  }, [notifications.length])
 
-  // Close on outside click
+  // Close notification box when clicking outside
   useEffect(() => {
-    const onClick = e => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setOpen(false);
+    function handleClickOutside(event) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setOpen(false)
       }
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, []);
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [containerRef])
 
-  if (error) return null;
+  // 1) Loading state
+  if (isValidating && !data && !error) {
+    return (
+      <div className="p-2">
+        <LoadingSpinner />
+      </div>
+    )
+  }
 
-  // Mark one as read
+  // 2) Error state
+  if (error) {
+    return (
+      <div className="p-2">
+        <AlertBox
+          type="error"
+          message="Could not load notifications"
+          onClose={() => mutate()}
+        />
+      </div>
+    )
+  }
+
   const markAsRead = async (id) => {
-    // optimistic remove
     mutate(
-      data.map(n => (n.id === id ? { ...n, read: true } : n)),
+      notifications.map(n => n.id === id ? { ...n, read: true } : n),
       false
-    );
-    await markOneAsRead(id, token);
-    // revalidate
-    mutate();
-  };
+    )
+    await markOneAsRead(id, token)
+    mutate()
+  }
 
-  // Mark all as read
   const markAllRead = async () => {
-    mutate(data.map(n => ({ ...n, read: true })), false);
-
-    await markAllAsRead(token);
-    mutate();
-  };
+    mutate(notifications.map(n => ({ ...n, read: true })), false)
+    await markAllAsRead(token)
+    mutate()
+    setOpen(false) // Close the notification box after marking all as read
+  }
 
   return (
     <div className="relative" ref={containerRef}>
@@ -85,15 +106,14 @@ export default function NotificationsBell() {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="absolute right-0 mt-2 w-80 max-h-96 overflow-auto bg-white shadow-lg rounded-lg z-50"
+            className="absolute right-0 mt-2 w-80 max-h-72 overflow-auto bg-white shadow-lg rounded-lg z-50"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
           >
             <div className="flex items-center justify-between px-4 py-2 border-b">
               <span className="font-medium">Notifications</span>
-              {data.length > 0 && (
+              {notifications.length > 0 && (
                 <button 
                   onClick={markAllRead}
                   className="text-sm text-blue-600 hover:underline"
@@ -103,54 +123,52 @@ export default function NotificationsBell() {
               )}
             </div>
             <ul>
-              {data.length > 0 ? data.map(n => (
-                <motion.li
-                  key={n.id}
-                  className={`flex items-start px-4 py-2 hover:bg-gray-100 ${n.read ? 'bg-gray-300' : 'bg-white'}`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20, scale: 0.8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <input
-                    type="checkbox"
-                    className="mt-1 mr-2"
-                    checked={n.read || false} // Ensure controlled input
-                    onChange={() => markAsRead(n.id)}
-                  />
-                  <div className="flex-1">
-                    <div
-                      className="cursor-pointer font-sm"
-                      onClick={async () => {
-                        const questionLink = `/questions/${n.topic_slug}?id=${n.topic_id}`;
-
-                        // 1) optimistically mark read in our SWR cache
-                        mutate(
-                          data.map(x => (x.id === n.id ? { ...x, read: true } : x)),
-                          false
-                        );
-
-                        // 2) wait for the server to actually mark it
-                        await markOneAsRead(n.id, token);
-
-                        // 3) now navigate — server is in sync
-                        window.location.assign(questionLink);
-                      }}
+              {notifications.length > 0
+                ? notifications.map(n => (
+                    <motion.li
+                      key={n.id}
+                      className={`flex items-start px-4 py-2 hover:bg-gray-100 ${
+                        n.read ? 'bg-gray-300' : 'bg-white'
+                      }`}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
                     >
-                      {n.message}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      <TimeDifferenceFormat date={n.date} />
-                    </div>
-                  </div>
-                </motion.li>
-              )) : (
-                <li className="px-4 py-2 text-gray-500">No new notifications</li>
-              )}
+                      <input
+                        type="checkbox"
+                        checked={!!n.read}
+                        onChange={() => markAsRead(n.id)}
+                        className="mt-1 mr-2"
+                      />
+                      <div className="flex-1">
+                        <div
+                          className="cursor-pointer font-sm"
+                          onClick={async () => {
+                            mutate(
+                              notifications.map(x => x.id === n.id ? { ...x, read: true } : x),
+                              false
+                            )
+                            await markOneAsRead(n.id, token)
+                            window.location.assign(`/questions/${n.topic_slug}?id=${n.topic_id}`)
+                          }}
+                        >
+                          {n.message}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          <TimeDifferenceFormat date={n.date} />
+                        </div>
+                      </div>
+                    </motion.li>
+                  ))
+                : (
+                  <li className="px-4 py-2 text-gray-500">
+                    No new notifications
+                  </li>
+                )
+              }
             </ul>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
-  );
+  )
 }

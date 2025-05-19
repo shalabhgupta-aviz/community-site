@@ -22,8 +22,7 @@ export async function allSearch(query){
   url.searchParams.set('per_page', '3');
 
   const res = await fetcher(url.toString());
-  if (!res.ok) throw new Error('Failed to search list');
-  return res.json();
+  return res;
 }
 
 /**

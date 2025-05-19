@@ -62,6 +62,7 @@ export async function uploadUserAvatar(file, token, userId) {
     headers: { Authorization: `Bearer ${token}` },
     body: form,
   });
+  console.log('mediaRes', mediaRes);
   if (!mediaRes.ok) throw new Error('Media upload failed');
   const media = await mediaRes.json();
 

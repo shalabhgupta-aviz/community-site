@@ -39,11 +39,22 @@ export default function TopicPage() {
                     .split('; ')
                     .find(row => row.startsWith('token='))
                     .split('=')[1];
-                const topicData = await getTopicDetails(id, 1, 5, token);
-                const recentTopicsData = await getRecentQuestions(5);
-                setTopic(topicData);
-                setQuestions(topicData.topics);
-                setRecentTopics(recentTopicsData);
+                const res = await getTopicDetails(id, 1, 5, token);
+                if (res.status === 200) {
+                    const topicData = res.data;
+                    setTopic(topicData);
+                    setQuestions(topicData.topics);
+                } else {
+                    setError('Failed to load topic');
+                }
+
+                const recentTopicsRes = await getRecentQuestions(5);
+                if (recentTopicsRes.status === 200) {
+                    const recentTopicsData = recentTopicsRes.data;
+                    setRecentTopics(recentTopicsData);
+                } else {
+                    setError('Failed to load recent topics');
+                }
             } catch (err) {
                 setError('Failed to load topic');
                 console.error(err);
@@ -71,7 +82,9 @@ export default function TopicPage() {
                 await createQuestion(id, newQuestionTitle, newQuestionContent, token, 'publish');
             }
             const updatedTopicData = await getTopicDetails(id, 1, 5, token);
-            setQuestions(updatedTopicData.topics);
+            if (updatedTopicData.status === 200) {
+                setQuestions(updatedTopicData.data.topics);
+            }
             setNewQuestionContent('');
             setNewQuestionTitle('');
         } catch (err) {
@@ -89,7 +102,9 @@ export default function TopicPage() {
                 .split('=')[1];
             await deleteQuestion(questionId, token);
             const updatedTopicData = await getTopicDetails(id, 1, 5, token);
-            setQuestions(updatedTopicData.topics);
+            if (updatedTopicData.status === 200) {
+                setQuestions(updatedTopicData.data.topics);
+            }
         } catch (err) {
             console.error('Failed to delete question:', err);
         }
@@ -98,7 +113,7 @@ export default function TopicPage() {
     const handleEditQuestion = (question) => {
         setEditingQuestionId(question.id);
         setNewQuestionTitle(question.title);
-        setNewQuestionContent(question.content);
+        setNewQuestionContent(question.excerpt);
     };
 
     const loadMorePublishedQuestions = async () => {
@@ -109,9 +124,8 @@ export default function TopicPage() {
                 .split('=')[1];
             const newPage = publishedPage + 1;
             const newQuestions = await getTopicDetails(id, newPage, 5, token);
-            console.log(newQuestions);
-            if (newQuestions.topics.length > 0) {
-                setQuestions(prevQuestions => [...prevQuestions, ...newQuestions.topics]);
+            if (newQuestions.status === 200 && newQuestions.data.topics.length > 0) {
+                setQuestions(prevQuestions => [...prevQuestions, ...newQuestions.data.topics]);
                 setPublishedPage(newPage);
             } else {
                 setHasMorePublished(false);
@@ -121,21 +135,24 @@ export default function TopicPage() {
         }
     };
 
-
     const handleSaveDraft = async () => {
-        
         try {
-          const token = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('token='))
-            .split('=')[1];
-          await createQuestion(id, newQuestionTitle, newQuestionContent, token, 'draft');
-          const updated = await getTopicDetails(id, 1, 5, token);
-          setQuestions(updated.topics);
+            const token = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('token='))
+                .split('=')[1];
+            await createQuestion(id, newQuestionTitle, newQuestionContent, token, 'draft');
+            const updated = await getTopicDetails(id, 1, 5, token);
+            if (updated.status === 200) {
+                setQuestions(updated.data.topics);
+            }
+            setNewQuestionContent('');
+            setNewQuestionTitle('');
+            setActiveTab('drafts');
         } catch (err) {
-          console.error('Failed to save draft:', err);
+            console.error('Failed to save draft:', err);
         }
-      };
+    };
 
     if (loading) return (
         <div className="flex justify-center items-center min-h-screen">
@@ -183,6 +200,7 @@ export default function TopicPage() {
                                     title={newQuestionTitle}
                                     setTitle={setNewQuestionTitle}
                                     titleRequired={true}
+
                                 />
                     <div className="flex space-x-4 mb-10">
                         <motion.button
@@ -233,7 +251,7 @@ export default function TopicPage() {
                                                     title={decodeHtml(question.title)}
                                                     author={question.author}
                                                     date={question.date}
-                                                    description={question.description ? question.description : question.latest_reply ? `<strong>${question.latest_reply.author.name}</strong> replied: ${question.latest_reply.content.rendered}` : ''}
+                                                    description={question.excerpt ? question.excerpt : question.latest_reply ? `<strong>${question.latest_reply.author.name}</strong> replied: ${question.latest_reply.content.rendered}` : ''}
                                                     link={{
                                                         pathname: `/questions/${question.slug}?id=${question.id}`,
                                                         query: { id: question.id }
@@ -269,7 +287,7 @@ export default function TopicPage() {
                                                 title={decodeHtml(question.title)}
                                                 author={question.author}
                                                 date={question.date}
-                                                description={question.description ? question.description : question.latest_reply ? `<strong>${question.latest_reply.author.name}</strong> replied: ${question.latest_reply.content.rendered}` : ''}
+                                                description={question.excerpt ? question.excerpt : question.latest_reply ? `<strong>${question.latest_reply.author.name}</strong> replied: ${question.latest_reply.content.rendered}` : ''}
                                                 link={{
                                                     pathname: `/questions/${question.slug}?id=${question.id}`,
                                                     query: { id: question.id }

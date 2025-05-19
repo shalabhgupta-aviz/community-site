@@ -25,9 +25,9 @@ export default function UserProfile({ params }) {
     const fetchUserProfile = async () => {
       setLoading(true);
       try {
-        const u = await getUserByUsername(username, 1, 1, 5);
-        if (!u) throw new Error();
-
+        const res = await getUserByUsername(username, 1, 1, 5);
+        if (res.status === 200) {
+          const u = res.data;  
         // Dynamically map user response
         const mappedUser = {
           avatar: u.profile.avatar,
@@ -52,7 +52,9 @@ export default function UserProfile({ params }) {
         })));
         setTopicTotalPages(u.topics_pagination.total_pages);
         setReplyTotalPages(u.replies_pagination.total_pages);
-      } catch {
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error);
         setError('Failed to load profile');
       } finally {
         setLoading(false);
@@ -64,33 +66,51 @@ export default function UserProfile({ params }) {
 
   // 2) load more topics
   useEffect(() => {
-    if (topicPage === 1) return
-    getUserByUsername(username, topicPage, 1)
-      .then(u => {
-        setTopics(prev => [...prev, ...u.topics])
-        setTopicTotalPages(u.topics_pagination.total_pages)
-      })
-      .catch(() => {/* ignore */})
-  }, [topicPage, username])
+    const fetchMoreTopics = async () => {
+      if (topicPage === 1) return;
+      try {
+        const res = await getUserByUsername(username, topicPage, 1);
+        const data = res.data;
+        if (res.status === 200) {
+          setTopics(prev => [...prev, ...data.topics]);
+          setTopicTotalPages(data.topics_pagination.total_pages);
+        }
+      } catch (error) {
+        console.error('Failed to load more topics:', error);
+        setError('Failed to load more topics');
+      }
+    };
+
+    fetchMoreTopics();
+  }, [topicPage, username]);
 
   // 3) load more replies
   useEffect(() => {
-    if (replyPage === 1) return
-    getUserByUsername(username, 1, replyPage)
-      .then(u => {
-        setReplies(prev => [...prev, ...u.replies.map(reply => ({
-          id: reply.id,
-          topicTitle: reply.topic_title,
-          topicId: reply.topic_id,
-          date: reply.date,
-          content: reply.content,
+    const fetchMoreReplies = async () => {
+      if (replyPage === 1) return;
+      try {
+        const res = await getUserByUsername(username, 1, replyPage);
+        const data = res.data;
+        if (res.status === 200) {
+          setReplies(prev => [...prev, ...data.replies.map(reply => ({
+            id: reply.id,
+            topicTitle: reply.topic_title,
+            topicId: reply.topic_id,
+            date: reply.date,
+            content: reply.content,
           link: reply.link,
           topicSlug: reply.topic_slug,
-        }))])
-        setReplyTotalPages(u.replies_pagination.total_pages)
-      })
-      .catch(() => {/* ignore */})
-  }, [replyPage, username])
+        }))]);
+          setReplyTotalPages(data.replies_pagination.total_pages);
+        }
+      } catch (error) {
+        console.error('Failed to load more replies:', error);
+        setError('Failed to load more replies');
+      }
+    };
+
+    fetchMoreReplies();
+  }, [replyPage, username]);
 
   if (loading) return <LoadingSpinner />
   if (error)   return <p className="text-red-500">{error}</p>

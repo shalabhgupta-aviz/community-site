@@ -8,8 +8,10 @@ import { AiOutlineLike, AiFillLike } from 'react-icons/ai'; // Modern thumbs up 
 import { toggleLike } from '@/lib/replies'; // Import the toggleLike function
 
 const ReplyCardWithImage = ({ reply, index, totalReplies, userMap }) => {
-  const [isLiked, setIsLiked] = useState(reply.likedByCurrentUser); // Use state to manage like status
-  const [likeCount, setLikeCount] = useState(reply.likeCount || 0); // Use state to manage like count
+  const [isLiked, setIsLiked] = useState(reply.you_liked); // Use state to manage like status
+  const [likeCount, setLikeCount] = useState(reply.likes_count || 0); // Use state to manage like count
+
+  const currentUser = JSON.parse(JSON.parse(localStorage.getItem('persist:root'))?.auth);
 
   const handleLikeClick = async () => {
     const token = document.cookie

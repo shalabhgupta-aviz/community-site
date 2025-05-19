@@ -11,10 +11,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import Breadcrumb from '@/components/Breadcrumb';
 import ReplyCardWithImage from '@/components/ReplyCardwithImage';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSelector } from 'react-redux'; // Import useSelector from react-redux
 import './page.css';
 import { createReply, updateReply, deleteReply } from '@/lib/replies'; // Import updateReply and deleteReply
-import AlertBox from '@/components/AlertBox'; // Import AlertBox component
 import TimeDifferenceFormat from '@/components/TimeDifferenceFormat';
 import ReplyInputBox from '@/components/ReplyInputBox';
 
@@ -37,14 +35,21 @@ export default function QuestionPage({ params }) {
   const [draftError, setDraftError] = useState(null); // State to manage draft error
   const [editingDraftId, setEditingDraftId] = useState(null); // State to track the draft being edited
   const [userMap, setUserMap] = useState({});
-  // Get current user from the Redux store
-  const currentUser = useSelector((state) => state.user);
-
+  
+  // Get current user from localStorage
+  const currentUser = JSON.parse(localStorage.getItem('persist:root'))?.auth;
   const fetchAllReplies = async (token) => {
-    const data = await getQuestionDetails(id, 1, 5, token);
-    setReplies(data.replies.filter(r => r.status === 'publish'));
-    setDraftReplies(data.replies.filter(r => r.status === 'draft'));
-    setHasMoreReplies(data.pagination.current_page < data.pagination.total_pages);
+    try {
+      const res = await getQuestionDetails(id, 1, 5, token);
+      const data = res.data;
+      console.log(data);
+      setReplies(data.replies.filter(r => r.status === 'publish'));
+      setDraftReplies(data.replies.filter(r => r.status === 'draft'));
+      setHasMoreReplies(data.pagination.current_page < data.pagination.total_pages);
+    } catch (error) {
+      console.error('Failed to fetch replies:', error);
+      setError('Failed to fetch replies');
+    }
   };
 
   useEffect(() => {
@@ -56,9 +61,12 @@ export default function QuestionPage({ params }) {
           .find(row => row.startsWith('token='))
           ?.split('=')[1];
         await fetchAllReplies(token); // Fetch all replies    
-        const data = await getQuestionDetails(id, 1, 5, token);
-        setQuestion(data.topic);
-        setHasMoreReplies(data.pagination.current_page < data.pagination.total_pages);
+        const res = await getQuestionDetails(id, 1, 5, token);
+        const data = res.data;
+        if (res.status === 200) {
+          setQuestion(data.topic);
+          setHasMoreReplies(data.pagination.current_page < data.pagination.total_pages);
+        }
       } catch (error) {
         console.error('Failed to load question details:', error);
         setError('Failed to load question details');
@@ -97,11 +105,15 @@ export default function QuestionPage({ params }) {
   useEffect(() => {
     const fetchRecentTopics = async () => {
       try {
-        const data = await getRecentQuestions(5); // Fetch recent topics, assuming 5 as the number of topics to fetch
-        const filteredData = data.filter(topic => topic.id !== id); // Filter out the current question
-        console.log('filteredData', filteredData);
-        setRecentTopics(filteredData);
-      } catch {
+        const res = await getRecentQuestions(5); // Fetch recent topics, assuming 5 as the number of topics to fetch
+        const data = res.data;
+        if (res.status === 200) {
+          const filteredData = data.filter(topic => topic.id !== id); // Filter out the current question
+          console.log('filteredData', filteredData);
+          setRecentTopics(filteredData);
+        }
+      } catch (error) {
+        console.error('Failed to load recent topics:', error);
         setError('Failed to load recent topics');
       }
       console.log('recentTopics', recentTopics);
@@ -115,10 +127,13 @@ export default function QuestionPage({ params }) {
     const nextPage = page + 1;
     setNewReplyLoading(true);
     try {
-      const data = await getQuestionDetails(id, nextPage, 5);
-      setReplies(prev => [...prev, ...data.replies]);
-      setPage(nextPage);
-      setHasMoreReplies(nextPage < data.pagination.total_pages);
+      const res = await getQuestionDetails(id, nextPage, 5);
+      const data = res.data;
+      if (res.status === 200) {
+        setReplies(prev => [...prev, ...data.replies]);
+        setPage(nextPage);
+        setHasMoreReplies(nextPage < data.pagination.total_pages);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -175,10 +190,14 @@ export default function QuestionPage({ params }) {
       .split('; ')
       .find(row => row.startsWith('token='))
       ?.split('=')[1];
+    console.log('replyContent', replyContent);
     if (!token) return setError('Please log in');
 
     try {
       if (editingDraftId) {
+        console.log('editingDraftId', editingDraftId);
+        console.log('replyContent', replyContent);
+        console.log('token', token);
         // ── EDIT EXISTING DRAFT ───────────────────────────────
         await updateReply(
           editingDraftId,
@@ -196,6 +215,11 @@ export default function QuestionPage({ params }) {
       await fetchAllReplies(token);
       setReplyContent('');
       setDraftError(null);
+
+      // Change active tab to 'drafts' if currently in 'published'
+      if (activeTab === 'published') {
+        setActiveTab('drafts');
+      }
 
     } catch (err) {
       setError(err.message || 'Failed to save draft');
@@ -240,15 +264,9 @@ export default function QuestionPage({ params }) {
     </div>;
   }
 
-  if (error) {
-    return (
-      <div className="p-4">
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
-          {error}
-        </div>
-      </div>
-    );
-  }
+  // if (error) {
+  //   return null; // Hide notification for now
+  // }
 
   if (!question) {
     return <div className="p-4">Question not found</div>;
@@ -333,6 +351,7 @@ export default function QuestionPage({ params }) {
                 ) : (
                   <div className="reply-thread">
                     {replies.map((reply, index) => {
+                      const youLiked = reply.liked_by.some(like => like.user_id === JSON.parse(currentUser).user.id);
                       return (
                         <motion.div
                           key={index}
@@ -344,7 +363,7 @@ export default function QuestionPage({ params }) {
                             }`}
                         >
                           <ReplyCardWithImage
-                            reply={reply}
+                            reply={{ ...reply, you_liked: youLiked }}
                             index={index}
                             totalReplies={replies.length}
                           />

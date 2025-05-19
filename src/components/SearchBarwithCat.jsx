@@ -16,6 +16,12 @@ export default function SearchBarWithCat() {
     { name: 'Observability', link: '/topics/sonic-amp-netops?id=31927' }
   ];
 
+  const suggestions = [
+    'What is SONiC?',
+    'What is NetOps?',
+    'How networking people are integrating SONiC'
+  ];
+
   useEffect(() => {
     const debounceTimer = setTimeout(async () => {
       if (searchTerm.length < 2) {
@@ -55,6 +61,9 @@ export default function SearchBarWithCat() {
     <div className="relative" ref={searchRef}>
       {/* Category Links */}
       <div className="inline-flex mt-8">
+        <div className='flex flex-row text-white font-bold mr-5'>
+          Topics
+        </div>
         {categories.map((cat, index) => (
           <motion.div
             key={cat.name}
@@ -92,6 +101,20 @@ export default function SearchBarWithCat() {
           </div>
         )}
       </motion.div>
+
+      {/* Suggestions */}
+      {/* {searchTerm.length < 2 && (
+          <div className="absolute top-full left-0 right-0 mt-2 max-w-2xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden z-50 flex flex-row">
+            <div className='flex flex-row text-black font-bold mr-5'>
+            Search Suggestions:
+          </div>
+          {suggestions.map((suggestion, index) => (
+            <div key={index} className="p-4 border-b hover:bg-gray-50 cursor-pointer text-black">
+              {suggestion}
+            </div>
+          ))}
+        </div>
+      )} */}
 
       {/* Search Results Dropdown */}
       <AnimatePresence>

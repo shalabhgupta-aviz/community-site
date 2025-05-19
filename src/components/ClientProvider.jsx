@@ -6,6 +6,7 @@ import { store, persistor } from '@/store';
 import { PersistGate } from 'redux-persist/integration/react';
 import { SessionProvider, useSession } from 'next-auth/react';
 import { loginSuccess } from '@/store/slices/authSlice';
+import { useSelector } from 'react-redux';
 import { getUserProfile, setToken, getToken } from '@/lib/auth';
 import React, { useEffect, useState } from 'react';
 import loadingSpinner from '/public/animations/loaderSpinner.json';
@@ -15,14 +16,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export default function ClientProvider({ children }) {
+   // ➊ if redux is empty but we have a cookie, rehydrate from it
+
+  
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <SessionProvider>
-          <ReduxSessionSync>
-            {children}
-            <SpeedInsights />
-          </ReduxSessionSync>
+          <ReduxSessionSync>{children}</ReduxSessionSync>
         </SessionProvider>
       </PersistGate>
     </Provider>
@@ -32,11 +33,24 @@ export default function ClientProvider({ children }) {
 function ReduxSessionSync({ children }) {
   const { data: session, status } = useSession();
   const [ready, setReady] = useState(false);
+  const reduxToken = useSelector((s) => s.auth.token);
+
 
   useEffect(() => {
     if (status !== 'authenticated' && status !== 'unauthenticated') return;
 
     (async () => {
+
+      const cookieToken = getToken();
+      if (!reduxToken && cookieToken) {
+        try {
+          const freshUser = await getUserProfile(cookieToken);
+          dispatch(loginSuccess({ token: cookieToken, user: freshUser }));
+        } catch (_) {
+          // cookie was stale or invalid
+        }
+      }
+
       let token;
       let user;
 

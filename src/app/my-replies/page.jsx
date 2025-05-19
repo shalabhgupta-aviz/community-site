@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { decodeHtml } from '@/plugins/decodeHTMLentities';
 import Link from 'next/link';
 import { getRepliesByUser } from '@/lib/users';
 import TimeAgo from 'javascript-time-ago';

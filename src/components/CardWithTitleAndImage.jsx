@@ -42,6 +42,7 @@ export default function CardWithTitleAndImage({
       <Link href={link} className="flex flex-col w-full">
         <div className="text-black font-bold mb-2" dangerouslySetInnerHTML={{ __html: decodeHtml(title) }} />
       </Link>
+      {console.log(description)}
       <div className="text-gray-600 mb-4" dangerouslySetInnerHTML={{ __html: decodeHtml(description) }} />
       <div className="flex items-center justify-between w-full">
         <span className="text-xs text-gray-500 font-medium">

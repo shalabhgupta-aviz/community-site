@@ -12,10 +12,11 @@ import NotificationsBell from '@/components/NotificationBell';
 export default function Header() {
   const { data: session, status } = useSession();
   const reduxUser = useSelector((s) => s.auth.user);
-  const user = reduxUser || session?.user;
+  const user = reduxUser?.data || session?.user;
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  
+
   const profileDropdownRef = useRef(null);
+
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -35,6 +36,19 @@ export default function Header() {
       console.error('Logout failed:', err);
     }
   };
+
+  const isTokenValid = () => {
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+      ?.split('=')[1];
+    console.log('token', token);
+    return !!token;
+  };
+
+  useEffect(() => {
+    console.log('isTokenValid', isTokenValid());
+  }, [isTokenValid]);
 
   return (
     <motion.header
@@ -75,13 +89,13 @@ export default function Header() {
 
         {/* Right controls */}
         <div className="flex items-center space-x-4">
-          <NotificationsBell />
+          {isTokenValid() && <NotificationsBell />}
 
           <AnimatePresence mode="wait">
             {status === 'loading' ? (
               // small pulse while NextAuth is initializing
               <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
-            ) : user ? (
+            ) : isTokenValid() ? (
               // logged-in
               <motion.div
                 key="logged-in"
@@ -91,7 +105,7 @@ export default function Header() {
                 className="flex items-center space-x-3 relative"
                 ref={profileDropdownRef}
               >
-                <button 
+                <button
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                   className="flex items-center space-x-2 mr-1"
                 >
@@ -117,8 +131,8 @@ export default function Header() {
 
                 {showProfileDropdown && (
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-                    <Link 
-                      href="/profile" 
+                    <Link
+                      href="/profile"
                       className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
                       onClick={() => setShowProfileDropdown(false)}
                     >
