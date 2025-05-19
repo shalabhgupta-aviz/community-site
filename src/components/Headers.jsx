@@ -7,16 +7,15 @@ import { useSession, signOut } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import NotificationsBell from '@/components/NotificationBell';
+import NotificationsBell from './NotificationBell';
 
 export default function Header() {
   const { data: session, status } = useSession();
   const reduxUser = useSelector((s) => s.auth.user);
-  const user = reduxUser?.data || session?.user;
+  const user = reduxUser || session?.user;
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-
+  const [hasToken, setHasToken] = useState(false);
   const profileDropdownRef = useRef(null);
-
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -24,9 +23,19 @@ export default function Header() {
         setShowProfileDropdown(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Determine token presence only on client
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('token='))
+        ?.split('=')[1];
+      setHasToken(!!token);
+    }
   }, []);
 
   const handleLogout = async () => {
@@ -36,19 +45,6 @@ export default function Header() {
       console.error('Logout failed:', err);
     }
   };
-
-  const isTokenValid = () => {
-    const token = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('token='))
-      ?.split('=')[1];
-    console.log('token', token);
-    return !!token;
-  };
-
-  useEffect(() => {
-    console.log('isTokenValid', isTokenValid());
-  }, [isTokenValid]);
 
   return (
     <motion.header
@@ -89,14 +85,12 @@ export default function Header() {
 
         {/* Right controls */}
         <div className="flex items-center space-x-4">
-          {isTokenValid() && <NotificationsBell />}
+          {hasToken && <NotificationsBell />}
 
           <AnimatePresence mode="wait">
             {status === 'loading' ? (
-              // small pulse while NextAuth is initializing
               <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
-            ) : isTokenValid() ? (
-              // logged-in
+            ) : hasToken ? (
               <motion.div
                 key="logged-in"
                 initial={{ opacity: 0, x: 20 }}
@@ -105,64 +99,36 @@ export default function Header() {
                 className="flex items-center space-x-3 relative"
                 ref={profileDropdownRef}
               >
-                <button
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="flex items-center space-x-2 mr-1"
-                >
-                  {user.avatar || user.image ? (
+                <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="flex items-center space-x-2 mr-1">
+                  {user?.avatar || user?.image ? (
                     <Image
                       src={user.avatar || user.image}
                       alt="Avatar"
                       width={32}
                       height={32}
                       className="rounded-full"
-                      onError={(e) => {
-                        e.currentTarget.src = '/default-avatar.png';
-                      }}
+                      onError={(e) => { e.currentTarget.src = '/default-avatar.png'; }}
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                      <span className="text-gray-600">
-                        {user.name?.[0]?.toUpperCase() || '?'}
-                      </span>
+                      <span className="text-gray-600">{user?.name?.[0]?.toUpperCase() || '?'}</span>
                     </div>
                   )}
                 </button>
-
                 {showProfileDropdown && (
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-                    <Link
-                      href="/profile"
-                      className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                      onClick={() => setShowProfileDropdown(false)}
-                    >
+                    <Link href="/profile" className="block px-4 py-2 text-gray-700 hover:bg-gray-100" onClick={() => setShowProfileDropdown(false)}>
                       Profile
                     </Link>
-                    <button
-                      onClick={() => {
-                        setShowProfileDropdown(false);
-                        handleLogout();
-                      }}
-                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    >
+                    <button onClick={() => { setShowProfileDropdown(false); handleLogout(); }} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
                       Logout
                     </button>
                   </div>
                 )}
               </motion.div>
             ) : (
-              // not logged-in
-              <motion.div
-                key="logged-out"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="flex space-x-3"
-              >
-                <Link
-                  href="/login"
-                  className="px-4 py-1 rounded-md border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition"
-                >
+              <motion.div key="logged-out" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="flex space-x-3">
+                <Link href="/login" className="px-4 py-1 rounded-md border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition">
                   Login
                 </Link>
               </motion.div>
