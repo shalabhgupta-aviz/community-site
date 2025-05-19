@@ -1,5 +1,5 @@
 import { Noto_Sans } from 'next/font/google';
-import '../styles/globals.css';
+import './globals.css';
 import Layout from '../layouts/Layout';
 import ClientProvider from '../components/ClientProvider';
 import ErrorBoundary from '../components/ErrorBoundary';
